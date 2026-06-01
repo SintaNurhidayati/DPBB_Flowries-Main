@@ -1,7 +1,8 @@
+// lib/pages/register_page.dart
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
+import '../services/session_preferences.dart';
 import '../widgets/custom_captcha.dart';
-
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -21,17 +22,17 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _showPassword = false;
   bool _showConfirmPassword = false;
   bool _isCaptchaVerified = false;
-  // Registrasi melalui halaman ini hanya untuk pembeli
+  bool _isLoading = false;
   final String _selectedRole = 'pembeli';
   final UserService _userService = UserService();
+  final SessionPreferences _sessionPrefs = SessionPreferences();
 
-  void _handleRegister() {
+  void _handleRegister() async {
     final nama = namaController.text.trim();
     final email = emailController.text.trim();
     final password = passController.text;
     final confirmPass = confirmPassController.text;
 
-    // Validasi
     if (nama.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Nama, email, dan password harus diisi!")),
@@ -54,39 +55,55 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     if (password != confirmPass) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Password tidak cocok!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password tidak cocok!")),
+      );
       return;
     }
 
     if (!email.contains('@')) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Email tidak valid!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Email tidak valid!")),
+      );
       return;
     }
 
-    // Registrasi instant
-    final userData = {
+    setState(() => _isLoading = true);
+
+    final newUser = await _userService.registerUser({
       'nama': nama,
       'email': email,
       'password': password,
       'tipeUser': _selectedRole,
       'noTelepon': noTeleponController.text.trim(),
       'alamat': alamatController.text.trim(),
-    };
+    });
 
-    // Simpan user baru ke daftar (hanya pembeli lewat halaman ini)
-    _userService.addUser(userData);
-
-    // Optionally set as current user (instant login) or just prompt to login
-    // _userService.setCurrentUser(userData); // Un-comment if auto login is desired
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Registrasi berhasil! Silakan login.")),
-    );
-    Navigator.pop(context); // Kembali ke login
+    if (newUser != null) {
+      // 🔥 SIMPAN SESSION KE SHAREDPREFERENCES
+      await _sessionPrefs.saveUserSession(
+        userId: newUser['id'].toString(),
+        userName: newUser['nama'] ?? nama,
+        userEmail: newUser['email'] ?? email,
+      );
+      
+      _userService.setCurrentUser(newUser);
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Registrasi berhasil!")),
+        );
+        Navigator.pushReplacementNamed(context, '/customer-home');
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Email sudah terdaftar!")),
+        );
+      }
+    }
   }
 
   @override
@@ -122,8 +139,6 @@ class _RegisterPageState extends State<RegisterPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(height: 20),
-                  const SizedBox(height: 20),
-                  // Form Fields
                   TextField(
                     controller: namaController,
                     decoration: InputDecoration(
@@ -231,11 +246,20 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: _handleRegister,
-                    child: const Text(
-                      "Daftar sebagai Pembeli",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    onPressed: _isLoading ? null : _handleRegister,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Daftar sebagai Pembeli",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                   const SizedBox(height: 15),
                   Row(
@@ -256,7 +280,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),

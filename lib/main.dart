@@ -82,11 +82,8 @@ class FlowriesApp extends StatelessWidget {
           );
         }
         if (settings.name == '/keranjang') {
-          final args = settings.arguments as Map<String, dynamic>?;
-          final userId = args?['userId'] ?? 1;
           return MaterialPageRoute(
-            builder: (context) => CartScreen(userId: userId),
-            settings: settings,
+            builder: (context) => const CartScreen(), // Tanpa parameter!
           );
         }
         if (settings.name == '/pembayaran') {

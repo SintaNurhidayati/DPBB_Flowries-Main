@@ -1,18 +1,18 @@
+// lib/pages/pembeli/product_detail_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
 import '../../services/review_service.dart';
 import '../../widgets/custom_quantity_selector.dart';
 import '../../services/cart_service.dart';
+import '../../services/session_preferences.dart';  // ✅ TAMBAHKAN
 import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  final int userId;
-  final int productId;
+  final int productId;  // ✅ HANYA productId, TIDAK PERLU userId
 
   const ProductDetailScreen({
     super.key,
-    required this.userId,
     required this.productId,
   });
 
@@ -34,12 +34,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<Map<String, dynamic>> _reviews = [];
   int _cartCount = 0;
   final ReviewService _reviewService = ReviewService();
+  final SessionPreferences _session = SessionPreferences();  // ✅ TAMBAHKAN
+  String? _userId;  // ✅ TAMBAHKAN
 
   final String _defaultImage = 'assets/images/placeholder.png';
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();  // ✅ PANGGIL INI
     _loadProduct();
     _loadReviews();
     _loadCartCount();
@@ -50,6 +53,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void dispose() {
     _reviewService.reviewsNotifier.removeListener(_onReviewsChanged);
     super.dispose();
+  }
+
+  // ✅ TAMBAHKAN METHOD INI
+  Future<void> _loadUserId() async {
+    final userId = await _session.getUserId();
+    setState(() {
+      _userId = userId;
+    });
   }
 
   void _onReviewsChanged() {
@@ -82,7 +93,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return _product!['image_url'] ?? '';
   }
 
-  // ========== METHOD BUILD PRODUCT IMAGE YANG BENAR (HANYA 1) ==========
   Widget _buildProductImage() {
     final primaryColor = Theme.of(context).primaryColor;
     final imageUrl = _getProductImageUrl();
@@ -91,7 +101,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       return _buildPlaceholderImage(primaryColor);
     }
 
-    // Jika URL (dari internet)
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return Image.network(
         imageUrl,
@@ -102,7 +111,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
-    // Jika Base64
     try {
       if (imageUrl.startsWith('/9j/') || imageUrl.startsWith('iVBOR')) {
         return Image.memory(
@@ -113,11 +121,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           errorBuilder: (_, __, ___) => _buildPlaceholderImage(primaryColor),
         );
       }
-    } catch (e) {
-      // Bukan Base64
-    }
+    } catch (e) {}
 
-    // Jika asset lokal
     return Image.asset(
       'assets/images/$imageUrl',
       height: 300,
@@ -155,13 +160,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return basePrice * _sizePrices[_selectedSize]! * _quantity;
   }
 
+  // ✅ PERBAIKI _addToCart (tidak perlu userId)
   Future<void> _addToCart() async {
     try {
       final productMap = {
         'id': widget.productId.toString(),
         'nama': _product?['nama'] ?? _product?['name'] ?? 'Produk',
         'gambar': _product?['gambar'] ?? _product?['image_url'],
-        'harga': _finalPrice / _quantity, // price per item
+        'harga': _finalPrice / _quantity,
       };
       
       for (int i = 0; i < _quantity; i++) {
@@ -172,30 +178,32 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produk ditambahkan ke keranjang')),
         );
+        // ✅ PERBAIKI: CartScreen TANPA parameter userId
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => CartScreen(userId: widget.userId),
+            builder: (context) => const CartScreen(),  // ✅ Tanpa parameter
           ),
         );
       }
     } catch (e) {
       print('Error adding to cart: $e');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Gagal menambahkan: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menambahkan: $e')),
+        );
       }
     }
   }
 
+  // ✅ PERBAIKI _buyNow (tidak perlu userId)
   Future<void> _buyNow() async {
     try {
       final productMap = {
         'id': widget.productId.toString(),
         'nama': _product?['nama'] ?? _product?['name'] ?? 'Produk',
         'gambar': _product?['gambar'] ?? _product?['image_url'],
-        'harga': _finalPrice / _quantity, // price per item
+        'harga': _finalPrice / _quantity,
       };
       
       for (int i = 0; i < _quantity; i++) {
@@ -206,7 +214,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => CartScreen(userId: widget.userId),
+            builder: (context) => const CartScreen(),  // ✅ Tanpa parameter
           ),
         );
       }
@@ -215,7 +223,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // Widget untuk menampilkan review card dengan balasan admin
   Widget _buildReviewCard(Map<String, dynamic> review, Color primaryColor, Color backgroundColor) {
     final hasReply = review['reply'] != null && review['reply'].toString().isNotEmpty;
     final replyDate = hasReply && review['repliedAt'] != null
@@ -237,7 +244,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Nama user, rating, dan tanggal
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -293,7 +299,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Isi Ulasan
           Text(
             review['isiUlasan'] ?? review['komentar'] ?? '',
             style: const TextStyle(
@@ -302,7 +307,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               height: 1.4,
             ),
           ),
-          // Foto Ulasan (jika ada)
           if (review['imageUrl'] != null && review['imageUrl'].toString().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -339,7 +343,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ),
-          // Balasan Admin
           if (hasReply) ...[
             const SizedBox(height: 12),
             Container(
@@ -460,18 +463,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
+  // ✅ PERBAIKI bagian actions di AppBar
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final surfaceColor = Theme.of(context).colorScheme.surface;
 
-    if (_isLoading)
+    if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (_product == null)
+    }
+    if (_product == null) {
       return const Scaffold(
         body: Center(child: Text('Produk tidak ditemukan')),
       );
+    }
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -491,12 +497,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CartScreen(userId: widget.userId),
-                  ),
-                ).then((_) => _loadCartCount()),
+                onPressed: () {
+                  // ✅ PERBAIKI: CartScreen TANPA parameter
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CartScreen(),  // ✅ Tanpa parameter
+                    ),
+                  ).then((_) => _loadCartCount());
+                },
               ),
               if (_cartCount > 0)
                 Positioned(

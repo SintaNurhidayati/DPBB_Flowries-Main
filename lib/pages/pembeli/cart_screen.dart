@@ -1,12 +1,13 @@
+// lib/pages/pembeli/cart_screen.dart
 import 'package:flutter/material.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../services/cart_service.dart';
 import '../../widgets/product_image.dart';
+import '../../services/session_preferences.dart';
 
 class CartScreen extends StatefulWidget {
-  final int userId;
-
-  const CartScreen({super.key, required this.userId});
+  // ✅ TIDAK PERLU PARAMETER userId LAGI!
+  const CartScreen({super.key});
 
   @override
   State<CartScreen> createState() => _CartScreenState();
@@ -15,10 +16,15 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   int _currentNavIndex = 2;
   final CartService _cartService = CartService();
+  final SessionPreferences _session = SessionPreferences();
+  
+  String? _userId;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadUserId();
     _cartService.cartNotifier.addListener(_onCartChanged);
   }
 
@@ -26,6 +32,22 @@ class _CartScreenState extends State<CartScreen> {
   void dispose() {
     _cartService.cartNotifier.removeListener(_onCartChanged);
     super.dispose();
+  }
+
+  Future<void> _loadUserId() async {
+    final userId = await _session.getUserId();
+    setState(() {
+      _userId = userId;
+      _isLoading = false;
+    });
+    
+    // Jika tidak ada session, arahkan ke login
+    if (userId == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Silakan login terlebih dahulu')),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   void _onCartChanged() {
@@ -77,16 +99,14 @@ class _CartScreenState extends State<CartScreen> {
       return sum + (price * quantity);
     });
 
-    // Simpan ID item yang dipilih sebelum dihapus
     final List<String> selectedIds = selectedItems.map((item) => item['id'].toString()).toList();
     final List<Map<String, dynamic>> itemsToCheckout = List.from(selectedItems);
 
-    // LANGSUNG HAPUS item yang dipilih dari keranjang
+    // Hapus item yang dipilih dari keranjang
     for (var id in selectedIds) {
       _cartService.removeFromCart(id);
     }
 
-    // Navigasi ke checkout dengan data produk
     Navigator.pushNamed(
       context,
       '/checkout',
@@ -132,6 +152,12 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final primaryColor = Theme.of(context).primaryColor;
     final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
@@ -191,7 +217,6 @@ class _CartScreenState extends State<CartScreen> {
             )
           : Column(
               children: [
-                // List Item
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -313,7 +338,6 @@ class _CartScreenState extends State<CartScreen> {
                     },
                   ),
                 ),
-                // Bottom Bar
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(

@@ -1,6 +1,7 @@
+// lib/pages/pembeli/checkout_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/transaction_service.dart';
-import '../../services/user_service.dart';
+import '../../services/session_preferences.dart';
 import 'dart:math';
 
 class CheckoutScreen extends StatefulWidget {
@@ -21,7 +22,7 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final TransactionService _transactionService = TransactionService();
-  final UserService _userService = UserService();
+  final SessionPreferences _session = SessionPreferences();
   final TextEditingController _alamatController = TextEditingController();
   
   bool _isProcessing = false;
@@ -37,12 +38,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
     
     try {
+      // ✅ AMBIL USER ID DARI SHAREDPREFERENCES
+      final userId = await _session.getUserId();
+      
+      if (userId == null) {
+        throw Exception('User tidak ditemukan, silakan login ulang');
+      }
+
       final String transactionId = 'TRX${DateTime.now().millisecondsSinceEpoch}${Random().nextInt(99)}';
-      final currentUser = _userService.currentUser;
       
       final Map<String, dynamic> transactionData = {
         'id': transactionId,
-        'pembeli': currentUser?['id'] ?? 'user_dummy',
+        'pembeli': userId,
         'itemsArray': widget.items,
         'total': widget.total,
         'status': 'menunggu_pembayaran',
@@ -55,7 +62,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       
       if (!mounted) return;
       
-      // Navigasi ke halaman pembayaran
       await Navigator.pushReplacementNamed(
         context,
         '/pembayaran',

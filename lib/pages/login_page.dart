@@ -1,5 +1,7 @@
+// lib/pages/login_page.dart
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
+import '../services/session_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +15,8 @@ class _LoginPageState extends State<LoginPage> {
   final passController = TextEditingController();
   bool _showPassword = false;
   final UserService _userService = UserService();
+  final SessionPreferences _sessionPrefs = SessionPreferences();
+  bool _isLoading = false;
 
   void _handleLogin() async {
     final email = emailController.text.trim();
@@ -25,26 +29,31 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
     final authUser = await _userService.authenticateUser(email, password);
+    
     if (authUser != null) {
+      // 🔥 SIMPAN SESSION KE SHAREDPREFERENCES
+      await _sessionPrefs.saveUserSession(
+        userId: authUser['id'].toString(),
+        userName: authUser['nama'] ?? 'User',
+        userEmail: authUser['email'] ?? email,
+      );
+      
+      _userService.setCurrentUser(authUser);
+      
       if (mounted) {
-        _userService.setCurrentUser(authUser);
+        setState(() => _isLoading = false);
         if (authUser['tipeUser'] == 'admin') {
-          Navigator.pushReplacementNamed(
-            context,
-            '/admin-dashboard',
-            arguments: authUser,
-          );
+          Navigator.pushReplacementNamed(context, '/admin-dashboard');
         } else {
-          Navigator.pushReplacementNamed(
-            context,
-            '/customer-home',
-            arguments: authUser,
-          );
+          Navigator.pushReplacementNamed(context, '/customer-home');
         }
       }
     } else {
       if (mounted) {
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Email atau password salah!")),
         );
@@ -127,11 +136,20 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    onPressed: _handleLogin,
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
+                    onPressed: _isLoading ? null : _handleLogin,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            "Login",
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                   ),
                   const SizedBox(height: 20),
                   Row(
@@ -152,26 +170,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  // Container(
-                  //   padding: const EdgeInsets.all(15),
-                  //   decoration: BoxDecoration(
-                  //     color: Colors.blue[50],
-                  //     borderRadius: BorderRadius.circular(10),
-                  //   ),
-                  //   child: const Column(
-                  //     crossAxisAlignment: CrossAxisAlignment.start,
-                  //     children: [
-                  //       Text(
-                  //         "Demo Akun:",
-                  //         style: TextStyle(fontWeight: FontWeight.bold),
-                  //       ),
-                  //       SizedBox(height: 8),
-                  //       Text("Pembeli: pembeli@gmail.com / password123"),
-                  //       Text("Admin: admin@gmail.com / admin123"),
-                  //     ],
-                  //   ),
-                  // ),
                 ],
               ),
             ),

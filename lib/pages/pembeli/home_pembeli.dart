@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/cart_badge_icon.dart';
-
 class HomePembeli extends StatefulWidget {
   const HomePembeli({super.key});
 
@@ -114,7 +113,7 @@ class _HomePembeliState extends State<HomePembeli> with SingleTickerProviderStat
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          // Add refresh logic if needed
+          // Refresh logic if needed
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -576,7 +575,7 @@ class _HomePembeliState extends State<HomePembeli> with SingleTickerProviderStat
                 children: [
                   _buildSocialIcon(Icons.facebook, Colors.blue),
                   const SizedBox(width: 12),
-                  _buildSocialIcon(Icons.camera_alt, Colors.pink), // Instagram
+                  _buildSocialIcon(Icons.camera_alt, Colors.pink),
                   const SizedBox(width: 12),
                   _buildSocialIcon(Icons.email, Colors.red),
                 ],

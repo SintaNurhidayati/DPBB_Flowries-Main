@@ -1,3 +1,4 @@
+// lib/services/user_service.dart
 import 'package:flutter/material.dart';
 import 'package:flowries/services/database_helper.dart';
 
@@ -13,18 +14,53 @@ class UserService {
   Map<String, dynamic> _currentUser = {};
   final ValueNotifier<Map<String, dynamic>> userNotifier = ValueNotifier({});
 
+  // ✅ TAMBAHKAN METHOD REGISTER USER INI
+  Future<Map<String, dynamic>?> registerUser(Map<String, dynamic> userData) async {
+    try {
+      final db = await DatabaseHelper.instance.database;
+      
+      // Cek apakah email sudah terdaftar
+      final existingUser = await db.query(
+        'users',
+        where: 'email = ?',
+        whereArgs: [userData['email']],
+      );
+      
+      if (existingUser.isNotEmpty) {
+        debugPrint('❌ Email already registered: ${userData['email']}');
+        return null;
+      }
+      
+      // Buat ID baru
+      final String newId = DateTime.now().millisecondsSinceEpoch.toString();
+      final String createdAt = DateTime.now().toIso8601String();
+      
+      final Map<String, dynamic> newUser = {
+        'id': newId,
+        'email': userData['email'],
+        'password': userData['password'],
+        'nama': userData['nama'],
+        'noTelepon': userData['noTelepon'] ?? '',
+        'alamat': userData['alamat'] ?? '',
+        'tipeUser': userData['tipeUser'] ?? 'pembeli',
+        'createdAt': createdAt,
+        'isActive': 1,
+      };
+      
+      await db.insert('users', newUser);
+      debugPrint('✅ User registered: ${userData['email']} with ID: $newId');
+      
+      return newUser;
+      
+    } catch (e) {
+      debugPrint('❌ Error registering user: $e');
+      return null;
+    }
+  }
+
+  // Method addUser yang sudah ada (panggil registerUser)
   Future<void> addUser(Map<String, dynamic> userData) async {
-    final db = await DatabaseHelper.instance.database;
-    final newId = userData['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-    final createdAt = userData['createdAt'] ?? DateTime.now().toIso8601String();
-    
-    final newUser = {
-      ...userData,
-      'id': newId,
-      'createdAt': createdAt,
-    };
-    await db.insert('users', newUser);
-    debugPrint('➕ User registered in DB: ${newUser['email']}');
+    await registerUser(userData);
   }
 
   Future<List<Map<String, dynamic>>> getUsersByType(String tipe) async {
