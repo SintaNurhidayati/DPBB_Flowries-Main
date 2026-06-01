@@ -1,0 +1,458 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import '../../services/product_service.dart';
+import '../../services/database_helper.dart';
+import '../../widgets/admin_layout.dart';
+import 'tambah_produk_page.dart';
+import 'admin_add_edit_custom_component.dart';
+import '../../widgets/product_image.dart';
+
+class KelolaProduk extends StatefulWidget {
+  const KelolaProduk({super.key});
+
+  @override
+  State<KelolaProduk> createState() => _KelolaProdukState();
+}
+
+class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderStateMixin {
+  final ProductService _productService = ProductService();
+  late TabController _tabController;
+  
+  // Data default untuk komponen custom (TIDAK BISA DIHAPUS)
+  final List<Map<String, dynamic>> _defaultFlowers = const [
+    {'id': 1, 'name': 'Mawar Merah', 'price': 15000, 'image_url': 'assets/images/mawar_merah.png', 'isDefault': true},
+    {'id': 2, 'name': 'Tulip Kuning', 'price': 12000, 'image_url': 'assets/images/tulip_kuning.png', 'isDefault': true},
+    {'id': 3, 'name': 'Lily Putih', 'price': 18000, 'image_url': 'assets/images/lily_putih.png', 'isDefault': true},
+    {'id': 4, 'name': 'Matahari', 'price': 10000, 'image_url': 'assets/images/matahari.png', 'isDefault': true},
+    {'id': 5, 'name': 'Sakura Pink', 'price': 20000, 'image_url': 'assets/images/sakura_pink.png', 'isDefault': true},
+  ];
+  
+  final List<Map<String, dynamic>> _defaultWrappings = const [
+    {'id': 1, 'name': 'Kertas Kraft', 'price': 5000, 'image_url': 'assets/images/kraft.png', 'isDefault': true},
+    {'id': 2, 'name': 'Kertas Mewah', 'price': 10000, 'image_url': 'assets/images/mewah.png', 'isDefault': true},
+    {'id': 3, 'name': 'Kertas Bunga', 'price': 8000, 'image_url': 'assets/images/bunga.png', 'isDefault': true},
+    {'id': 4, 'name': 'Kertas Polos', 'price': 3000, 'image_url': 'assets/images/polos.png', 'isDefault': true},
+  ];
+  
+  final List<Map<String, dynamic>> _defaultSizes = const [
+    {'id': 1, 'name': 'Small', 'price': 0, 'description': '10-15 batang', 'isDefault': true},
+    {'id': 2, 'name': 'Medium', 'price': 25000, 'description': '20-25 batang', 'isDefault': true},
+    {'id': 3, 'name': 'Large', 'price': 50000, 'description': '30-35 batang', 'isDefault': true},
+  ];
+  
+  // Data dari database
+  List<Map<String, dynamic>> _dbFlowers = [];
+  List<Map<String, dynamic>> _dbWrappings = [];
+  List<Map<String, dynamic>> _dbSizes = [];
+  
+  // Gabungan untuk ditampilkan
+  List<Map<String, dynamic>> _displayFlowers = [];
+  List<Map<String, dynamic>> _displayWrappings = [];
+  List<Map<String, dynamic>> _displaySizes = [];
+  
+  List<Map<String, dynamic>> _catalogProducts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadData();
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      if (_tabController.index == 0) {
+        _catalogProducts = await DatabaseHelper.instance.getAllProducts();
+      } else {
+        _dbFlowers = await DatabaseHelper.instance.getCustomFlowers();
+        _dbWrappings = await DatabaseHelper.instance.getCustomWrappings();
+        _dbSizes = await DatabaseHelper.instance.getCustomSizes();
+        
+        _displayFlowers = [..._defaultFlowers, ..._dbFlowers.map((f) => {...f, 'isDefault': false}).toList()];
+        _displayWrappings = [..._defaultWrappings, ..._dbWrappings.map((w) => {...w, 'isDefault': false}).toList()];
+        _displaySizes = [..._defaultSizes, ..._dbSizes.map((s) => {...s, 'isDefault': false}).toList()];
+      }
+    } catch (e) {
+      print('Error loading data: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteProduct(Map<String, dynamic> product) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Produk'),
+        content: Text('Apakah Anda yakin ingin menghapus "${product['nama']}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Hapus')),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      await _productService.deleteProduct(product['id'].toString());
+      _loadData();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Produk berhasil dihapus')));
+    }
+  }
+
+  Future<void> _deleteCustomComponent(String type, int id, String name, bool isDefault) async {
+    if (isDefault) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Komponen default tidak dapat dihapus!')));
+      return;
+    }
+    
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Hapus ${_getTypeName(type)}'),
+        content: Text('Apakah Anda yakin ingin menghapus "$name"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.pop(context, true), style: TextButton.styleFrom(foregroundColor: Colors.red), child: const Text('Hapus')),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      if (type == 'flower') await DatabaseHelper.instance.deleteCustomFlower(id);
+      else if (type == 'wrapping') await DatabaseHelper.instance.deleteCustomWrapping(id);
+      else if (type == 'size') await DatabaseHelper.instance.deleteCustomSize(id);
+      await _loadData();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${_getTypeName(type)} berhasil dihapus')));
+    }
+  }
+
+  String _getTypeName(String type) {
+    switch (type) {
+      case 'flower': return 'Bunga';
+      case 'wrapping': return 'Kemasan';
+      case 'size': return 'Ukuran';
+      default: return 'Komponen';
+    }
+  }
+
+  void _showAddComponentDialog() {
+    final primaryColor = Theme.of(context).primaryColor;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pilih Tipe Komponen'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: const Text('🌸')),
+              title: const Text('Bunga Custom'),
+              onTap: () { Navigator.pop(context); _showAddEditComponent(type: 'flower'); },
+            ),
+            ListTile(
+              leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: const Text('📦')),
+              title: const Text('Kemasan Custom'),
+              onTap: () { Navigator.pop(context); _showAddEditComponent(type: 'wrapping'); },
+            ),
+            ListTile(
+              leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: const Text('📏')),
+              title: const Text('Ukuran Custom'),
+              onTap: () { Navigator.pop(context); _showAddEditComponent(type: 'size'); },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddEditComponent({required String type, Map<String, dynamic>? component}) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AdminAddEditCustomComponent(type: type, component: component)),
+    );
+    if (result == true) _loadData();
+  }
+
+  Widget _buildComponentCard(String title, IconData icon, List<Map<String, dynamic>> components, String type) {
+    final primaryColor = Theme.of(context).primaryColor;
+    
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(icon, color: primaryColor),
+                const SizedBox(width: 12),
+                Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => _showAddEditComponent(type: type),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Tambah', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          components.isEmpty
+              ? const Padding(padding: EdgeInsets.all(32), child: Center(child: Text('Belum ada data')))
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: components.length,
+                  separatorBuilder: (_, __) => const Divider(),
+                  itemBuilder: (context, index) {
+                    final item = components[index];
+                    final isDefault = item['isDefault'] == true;
+                    return ListTile(
+                      leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: Icon(icon, color: primaryColor, size: 20)),
+                      title: Text(item['name'], style: TextStyle(fontWeight: isDefault ? FontWeight.bold : FontWeight.normal)),
+                      subtitle: type == 'size' && item['description'] != null ? Text(item['description'], style: const TextStyle(fontSize: 12)) : null,
+                      trailing: SizedBox(
+                        width: 140,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Rp ${(item['price'] as num).toStringAsFixed(0)}',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13),
+                                textAlign: TextAlign.right,
+                              ),
+                            ),
+                            if (!isDefault) ...[
+                              IconButton(
+                                icon: const Icon(Icons.edit, size: 18, color: Colors.blue),
+                                onPressed: () => _showAddEditComponent(type: type, component: item),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                                onPressed: () => _deleteCustomComponent(type, item['id'], item['name'], isDefault),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return AdminLayout(
+      selectedIndex: 1,
+      title: 'Kelola Produk',
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: primaryColor,
+              tabs: const [
+                Tab(text: '📦 Katalog Produk'),
+                Tab(text: '🎨 Komponen Custom'),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  if (_tabController.index == 0) {
+                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahProdukPage()));
+                    if (result == true) _loadData();
+                  } else {
+                    _showAddComponentDialog();
+                  }
+                },
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: Text(_tabController.index == 0 ? 'Tambah Produk' : 'Tambah Komponen'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Tab 1: Katalog Produk
+                      _catalogProducts.isEmpty
+                          ? const Center(child: Text('Belum ada produk'))
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _catalogProducts.length,
+                              itemBuilder: (context, index) {
+                                final product = _catalogProducts[index];
+                                final price = (product['harga'] as num?)?.toDouble() ?? 0;
+                                final stock = product['stok'] ?? 0;
+                                
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: SizedBox(
+                                            width: 80,
+                                            height: 80,
+                                            child: ProductImage(
+                                              imageString: product['gambar'] ?? product['image'],
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                product['nama'] ?? 'Produk',
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                product['deskripsi'] ?? '',
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: primaryColor.withOpacity(0.1),
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      'Stok: $stock',
+                                                      style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              'Rp ${price.toStringAsFixed(0)}',
+                                              style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 14),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Row(
+                                              children: [
+                                                IconButton(
+                                                  icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                  onPressed: () async {
+                                                    final result = await Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(builder: (context) => TambahProdukPage(product: product)),
+                                                    );
+                                                    if (result == true) _loadData();
+                                                  },
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                  onPressed: () => _deleteProduct(product),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                      
+                      // Tab 2: Komponen Custom
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildComponentCard('🌸 Bunga Custom', Icons.local_florist, _displayFlowers, 'flower'),
+                            const SizedBox(height: 20),
+                            _buildComponentCard('📦 Kemasan Custom', Icons.shopping_bag, _displayWrappings, 'wrapping'),
+                            const SizedBox(height: 20),
+                            _buildComponentCard('📏 Ukuran Custom', Icons.straighten, _displaySizes, 'size'),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.sync, size: 20, color: Colors.blue.shade700),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Perubahan pada komponen custom akan langsung terlihat oleh pembeli di halaman Custom Bouquet.',
+                                      style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
