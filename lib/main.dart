@@ -62,7 +62,6 @@ class FlowriesApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
       },
       onGenerateRoute: (settings) {
-        // Routes untuk Pembeli
         if (settings.name == '/customer-home') {
           return MaterialPageRoute(builder: (context) => const HomePembeli());
         }
@@ -83,7 +82,7 @@ class FlowriesApp extends StatelessWidget {
         }
         if (settings.name == '/keranjang') {
           return MaterialPageRoute(
-            builder: (context) => const CartScreen(), // Tanpa parameter!
+            builder: (context) => const CartScreen(), 
           );
         }
         if (settings.name == '/pembayaran') {
@@ -104,11 +103,9 @@ class FlowriesApp extends StatelessWidget {
           );
         }
 
-        // PERBAIKAN: Route /tambah-ulasan dengan constructor
         if (settings.name == '/tambah-ulasan') {
           final args = settings.arguments as Map<String, dynamic>?;
 
-          // Ambil produk dari arguments
           Map<String, dynamic>? product;
           if (args != null && args.containsKey('products')) {
             final productsList = args['products'];
@@ -117,7 +114,6 @@ class FlowriesApp extends StatelessWidget {
             }
           }
 
-          // Jika tidak ada di products, coba dari productId
           if (product == null &&
               args != null &&
               args.containsKey('productId')) {

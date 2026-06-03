@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/transaction_service.dart';
+import '../../services/session_preferences.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String? transactionId;
@@ -23,6 +24,7 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   final TransactionService _transactionService = TransactionService();
+  final SessionPreferences _session = SessionPreferences();
   String? _transactionId;
   double _total = 0.0;
   bool _initialized = false;
@@ -57,6 +59,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   bool _isProcessing = false;
 
+  
   @override
   void initState() {
     super.initState();
@@ -65,6 +68,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _total = widget.total;
       _initialized = true;
     }
+    _loadSavedPaymentMethod();
   }
 
   @override
@@ -78,6 +82,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
       }
       _initialized = true;
     }
+  }
+
+  // Load metode pembayaran dari Shared Preference
+  Future<void> _loadSavedPaymentMethod() async {
+    final savedMethod = await _session.getSelectedPaymentMethod();
+    if (_paymentMethods.containsKey(savedMethod)) {
+      setState(() {
+        _selectedMethod = savedMethod;
+      });
+      print('Loaded saved payment method: $savedMethod');
+    }
+  }
+
+  // Save metode pembayaran ke Shared Preference
+  Future<void> _savePaymentMethod() async {
+    await _session.saveSelectedPaymentMethod(_selectedMethod);
+    print('Saved payment method: $_selectedMethod');
   }
 
   @override
@@ -139,7 +160,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 child: RadioListTile<String>(
                   value: entry.key,
                   groupValue: _selectedMethod,
-                  onChanged: (value) => setState(() => _selectedMethod = value!),
+                  onChanged: (value) {
+                    setState(() => _selectedMethod = value!);
+                    _savePaymentMethod();
+                  },
                   title: Text(entry.value['name'], style: const TextStyle(fontWeight: FontWeight.w500)),
                   secondary: Container(
                     padding: const EdgeInsets.all(8),
@@ -243,6 +267,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                     setState(() => _isProcessing = true);
                     try {
+                      await _savePaymentMethod(); // Simpan metode pembayaran sebelum submit
                       await _transactionService.updateTransactionPaymentProof(_transactionId!, _buktiPembayaranBase64!);
                       if (mounted) {
                         // Payment success, kembali ke CartScreen dengan result true

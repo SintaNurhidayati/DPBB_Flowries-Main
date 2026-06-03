@@ -1,4 +1,3 @@
-// lib/pages/pembeli/cart_screen.dart
 import 'package:flutter/material.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../services/cart_service.dart';
@@ -6,7 +5,6 @@ import '../../widgets/product_image.dart';
 import '../../services/session_preferences.dart';
 
 class CartScreen extends StatefulWidget {
-  // ✅ TIDAK PERLU PARAMETER userId LAGI!
   const CartScreen({super.key});
 
   @override

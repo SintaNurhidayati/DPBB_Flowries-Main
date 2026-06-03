@@ -1,4 +1,3 @@
-// lib/pages/login_page.dart
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 import '../services/session_preferences.dart';
@@ -34,7 +33,6 @@ class _LoginPageState extends State<LoginPage> {
     final authUser = await _userService.authenticateUser(email, password);
     
     if (authUser != null) {
-      // 🔥 SIMPAN SESSION KE SHAREDPREFERENCES
       await _sessionPrefs.saveUserSession(
         userId: authUser['id'].toString(),
         userName: authUser['nama'] ?? 'User',

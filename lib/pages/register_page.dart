@@ -1,4 +1,3 @@
-// lib/pages/register_page.dart
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 import '../services/session_preferences.dart';

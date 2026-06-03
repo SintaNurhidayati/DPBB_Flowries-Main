@@ -1,4 +1,3 @@
-// lib/pages/pembeli/tambah_ulasan_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
@@ -108,7 +107,7 @@ class _TambahUlasanPageState extends State<TambahUlasanPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      // ✅ AMBIL USER ID DARI SHAREDPREFERENCES
+      // Ambil user ID dari shared_preferensce
       final userId = await _session.getUserId();
       
       if (userId == null) {

@@ -1,4 +1,3 @@
-// lib/pages/pembeli/checkout_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/transaction_service.dart';
 import '../../services/session_preferences.dart';
@@ -27,6 +26,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   
   bool _isProcessing = false;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadLastAddress(); 
+  }
+
+   // Untuk memuat alamat terakhir
+  Future<void> _loadLastAddress() async {
+    final lastAddress = await _session.getLastCheckoutAddress();
+    if (lastAddress.isNotEmpty) {
+      setState(() {
+        _alamatController.text = lastAddress;
+      });
+      print('✅ Loaded last address: $lastAddress');
+    }
+  }
+
+  // Untuk menyimpan alamat
+  Future<void> _saveLastAddress() async {
+    if (_alamatController.text.trim().isNotEmpty) {
+      await _session.saveLastCheckoutAddress(_alamatController.text.trim());
+      print('Saved address: ${_alamatController.text.trim()}');
+    }
+  }
+
   Future<void> _buatPesanan() async {
     if (_alamatController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,12 +62,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     setState(() => _isProcessing = true);
     
     try {
-      // ✅ AMBIL USER ID DARI SHAREDPREFERENCES
+      // Ambil user ID dari Shared_Preferences
       final userId = await _session.getUserId();
       
       if (userId == null) {
         throw Exception('User tidak ditemukan, silakan login ulang');
       }
+
+      // Simpan alamat sebelum buat pesanan
+      await _saveLastAddress();
 
       final String transactionId = 'TRX${DateTime.now().millisecondsSinceEpoch}${Random().nextInt(99)}';
       
