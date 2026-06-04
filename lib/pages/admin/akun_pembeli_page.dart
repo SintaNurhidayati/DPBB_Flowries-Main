@@ -117,198 +117,228 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
 
                 final sortedUsers = _sortUsersByType(snapshot.data!);
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3, // Desktop view usually 3 or 4
-                    childAspectRatio: 2.0,
-                    crossAxisSpacing: 20,
-                    mainAxisSpacing: 20,
-                  ),
-                  itemCount: sortedUsers.length,
-                  itemBuilder: (context, index) {
-                    final user = sortedUsers[index];
-                    final isPembeli = (user['tipeUser'] ?? 'pembeli') == 'pembeli';
+                // Menggunakan LayoutBuilder agar jumlah kolom dan tinggi bisa menyesuaikan lebar layar desktop
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount = 3;
+                    if (constraints.maxWidth < 700) {
+                      crossAxisCount = 1;
+                    } else if (constraints.maxWidth < 1100) {
+                      crossAxisCount = 2;
+                    }
 
-                    return Container(
+                    return GridView.builder(
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(
-                          color: isPembeli ? Colors.pink.shade200 : Colors.blue.shade200,
-                          width: 2,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 5,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        // Diubah ke 1.1 atau 1.2 agar card punya space vertikal yang cukup untuk menampung teks & tombol
+                        childAspectRatio: crossAxisCount == 1 ? 1.8 : 1.15,
+                        crossAxisSpacing: 20,
+                        mainAxisSpacing: 20,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  user['nama'] ?? '-',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isPembeli ? Colors.pink.shade50 : Colors.blue.shade50,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isPembeli ? Colors.pink.shade200 : Colors.blue.shade200,
-                                  ),
-                                ),
-                                child: Text(
-                                  isPembeli ? ((user['isActive'] ?? 1) == 1 ? 'PEMBELI' : 'NONAKTIF') : 'ADMIN',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isPembeli ? ((user['isActive'] ?? 1) == 1 ? Colors.pink.shade700 : Colors.red.shade700) : Colors.blue.shade700,
-                                  ),
-                                ),
+                      itemCount: sortedUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = sortedUsers[index];
+                        final isPembeli = (user['tipeUser'] ?? 'pembeli') == 'pembeli';
+
+                        return Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: isPembeli ? Colors.pink.shade200 : Colors.blue.shade200,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.1),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.email, size: 16, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  user['email'] ?? '-',
-                                  style: const TextStyle(color: Colors.black87),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.phone, size: 16, color: Colors.grey),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  user['noTelepon'] ?? '-',
-                                  style: const TextStyle(color: Colors.black87),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                            if (user['alamat'] != null && user['alamat'] != '-') ...[
-                              const SizedBox(height: 8),
+                              // Bagian Atas: Nama dan Badge Status
                               Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      user['alamat'] ?? '-',
-                                      style: const TextStyle(color: Colors.black87),
-                                      maxLines: 2,
+                                      user['nama'] ?? '-',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
                                       overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isPembeli ? Colors.pink.shade50 : Colors.blue.shade50,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: isPembeli ? Colors.pink.shade200 : Colors.blue.shade200,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      isPembeli ? ((user['isActive'] ?? 1) == 1 ? 'PEMBELI' : 'NONAKTIF') : 'ADMIN',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isPembeli ? ((user['isActive'] ?? 1) == 1 ? Colors.pink.shade700 : Colors.red.shade700) : Colors.blue.shade700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              
+                              // Bagian Tengah: Detail Informasi (Email, No Telp, Alamat)
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.email, size: 16, color: Colors.grey),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              user['email'] ?? '-',
+                                              style: const TextStyle(color: Colors.black87, fontSize: 13),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.phone, size: 16, color: Colors.grey),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              user['noTelepon'] ?? '-',
+                                              style: const TextStyle(color: Colors.black87, fontSize: 13),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (user['alamat'] != null && user['alamat'] != '-') ...[
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                user['alamat'] ?? '-',
+                                                style: const TextStyle(color: Colors.black87, fontSize: 13),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              
+                              // Bagian Bawah: Aksi Tombol-Tombol
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: OutlinedButton(
+                                      onPressed: isPembeli
+                                          ? () async {
+                                              await _userService.toggleUserStatus(
+                                                  user['id'].toString(),
+                                                  user['isActive'] ?? 1);
+                                              setState(() {
+                                                _usersFuture = _userService.getAllUsers();
+                                              });
+                                            }
+                                          : null,
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        foregroundColor: (user['isActive'] ?? 1) == 1
+                                            ? Colors.orange
+                                            : Colors.green,
+                                        side: BorderSide(
+                                          color: (user['isActive'] ?? 1) == 1
+                                              ? Colors.orange
+                                              : Colors.green,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        (user['isActive'] ?? 1) == 1 ? 'Nonaktifkan' : 'Aktifkan',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      onPressed: isPembeli
+                                          ? () async {
+                                              showDialog(
+                                                context: context,
+                                                builder: (ctx) => AlertDialog(
+                                                  title: const Text('Hapus Akun'),
+                                                  content: const Text('Apakah Anda yakin ingin menghapus akun ini?'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(ctx),
+                                                      child: const Text('Batal'),
+                                                    ),
+                                                    ElevatedButton(
+                                                      onPressed: () async {
+                                                        Navigator.pop(ctx);
+                                                        await _userService.deleteUser(user['id'].toString());
+                                                        setState(() {
+                                                          _usersFuture = _userService.getAllUsers();
+                                                        });
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.red),
+                                                      child: const Text('Hapus'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+                                          : null,
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      child: const Text(
+                                        'Hapus',
+                                        style: TextStyle(fontSize: 12),
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
                             ],
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: isPembeli
-                                        ? () async {
-                                            await _userService.toggleUserStatus(
-                                                user['id'].toString(),
-                                                user['isActive'] ?? 1);
-                                            setState(() {
-                                              _usersFuture = _userService.getAllUsers();
-                                            });
-                                          }
-                                        : null,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: (user['isActive'] ?? 1) == 1
-                                          ? Colors.orange
-                                          : Colors.green,
-                                      side: BorderSide(
-                                        color: (user['isActive'] ?? 1) == 1
-                                            ? Colors.orange
-                                            : Colors.green,
-                                      ),
-                                    ),
-                                    child: Text((user['isActive'] ?? 1) == 1
-                                        ? 'Nonaktifkan'
-                                        : 'Aktifkan'),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: isPembeli
-                                        ? () async {
-                                            showDialog(
-                                              context: context,
-                                              builder: (ctx) => AlertDialog(
-                                                title: const Text('Hapus Akun'),
-                                                content: const Text(
-                                                    'Apakah Anda yakin ingin menghapus akun ini?'),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () => Navigator.pop(ctx),
-                                                    child: const Text('Batal'),
-                                                  ),
-                                                  ElevatedButton(
-                                                    onPressed: () async {
-                                                      Navigator.pop(ctx);
-                                                      await _userService.deleteUser(
-                                                          user['id'].toString());
-                                                      setState(() {
-                                                        _usersFuture =
-                                                            _userService.getAllUsers();
-                                                      });
-                                                    },
-                                                    style: ElevatedButton.styleFrom(
-                                                        backgroundColor: Colors.red),
-                                                    child: const Text('Hapus'),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }
-                                        : null,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Hapus'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                      ),
+                          ),
+                        );
+                      },
                     );
                   },
                 );

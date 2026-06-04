@@ -280,11 +280,12 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
               ],
             ),
           ),
+          // Bagian Tombol Tambah (Sekarang Hanya Icon Plus)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Align(
               alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
+              child: ElevatedButton(
                 onPressed: () async {
                   if (_tabController.index == 0) {
                     final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahProdukPage()));
@@ -293,13 +294,13 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                     _showAddComponentDialog();
                   }
                 },
-                icon: const Icon(Icons.add, color: Colors.white),
-                label: Text(_tabController.index == 0 ? 'Tambah Produk' : 'Tambah Komponen'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.all(12), // Padding seimbang untuk lingkaran/kotak rounded pas
+                  shape: const CircleBorder(), // Diubah jadi lingkaran biar estetik hanya isi plus (+)
+                  elevation: 2,
                 ),
+                child: const Icon(Icons.add, color: Colors.white, size: 24),
               ),
             ),
           ),
@@ -313,7 +314,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                       _catalogProducts.isEmpty
                           ? const Center(child: Text('Belum ada produk'))
                           : ListView.builder(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
                               itemCount: _catalogProducts.length,
                               itemBuilder: (context, index) {
                                 final product = _catalogProducts[index];
@@ -326,12 +327,13 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start, // Atur rata atas agar aman dari overflow vertikal
                                       children: [
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(8),
                                           child: SizedBox(
-                                            width: 80,
-                                            height: 80,
+                                            width: 70,
+                                            height: 70,
                                             child: ProductImage(
                                               imageString: product['gambar'] ?? product['image'],
                                               fit: BoxFit.cover,
@@ -339,13 +341,15 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                           ),
                                         ),
                                         const SizedBox(width: 12),
+                                        // Tengah: Nama, Deskripsi, Stok (Bungkus Expanded agar text wrap otomatis)
                                         Expanded(
+                                          flex: 3,
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 product['nama'] ?? 'Produk',
-                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
@@ -357,56 +361,62 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                                 style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                                               ),
                                               const SizedBox(height: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: primaryColor.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  'Stok: $stock',
+                                                  style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Kanan: Harga & Tombol Aksi (Bungkus Expanded untuk alokasi sisa ruang terukur)
+                                        Expanded(
+                                          flex: 2,
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Text(
+                                                'Rp ${price.toStringAsFixed(0)}',
+                                                style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 12),
                                               Row(
+                                                mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
-                                                  Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                                    decoration: BoxDecoration(
-                                                      color: primaryColor.withOpacity(0.1),
-                                                      borderRadius: BorderRadius.circular(12),
-                                                    ),
-                                                    child: Text(
-                                                      'Stok: $stock',
-                                                      style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
-                                                    ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                    onPressed: () async {
+                                                      final result = await Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(builder: (context) => TambahProdukPage(product: product)),
+                                                      );
+                                                      if (result == true) _loadData();
+                                                    },
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    visualDensity: VisualDensity.compact,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                    onPressed: () => _deleteProduct(product),
+                                                    padding: EdgeInsets.zero,
+                                                    constraints: const BoxConstraints(),
+                                                    visualDensity: VisualDensity.compact,
                                                   ),
                                                 ],
                                               ),
                                             ],
                                           ),
-                                        ),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Text(
-                                              'Rp ${price.toStringAsFixed(0)}',
-                                              style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 14),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Row(
-                                              children: [
-                                                IconButton(
-                                                  icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                                  onPressed: () async {
-                                                    final result = await Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(builder: (context) => TambahProdukPage(product: product)),
-                                                    );
-                                                    if (result == true) _loadData();
-                                                  },
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                IconButton(
-                                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                                  onPressed: () => _deleteProduct(product),
-                                                  padding: EdgeInsets.zero,
-                                                  constraints: const BoxConstraints(),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
                                         ),
                                       ],
                                     ),
