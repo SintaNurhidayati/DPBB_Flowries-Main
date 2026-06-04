@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/product_service.dart';
 import '../../services/transaction_service.dart';
 import '../../widgets/admin_layout.dart';
@@ -14,11 +15,40 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final ProductService _productService = ProductService();
   final TransactionService _transactionService = TransactionService();
   bool _isLoading = false;
+  
+  // Dua variabel untuk Shared Preferences
+  bool _showStats = true;
+  bool _showRecentTransactions = true;
 
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     _loadData();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _showStats = prefs.getBool('admin_show_stats') ?? true;
+      _showRecentTransactions = prefs.getBool('admin_show_recent_transactions') ?? true;
+    });
+  }
+
+  Future<void> _toggleStats(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('admin_show_stats', value);
+    setState(() {
+      _showStats = value;
+    });
+  }
+
+  Future<void> _toggleRecentTransactions(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('admin_show_recent_transactions', value);
+    setState(() {
+      _showRecentTransactions = value;
+    });
   }
 
   Future<void> _loadData() async {
@@ -89,11 +119,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Pengaturan Shared Preferences Toggles
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.settings, color: Colors.grey),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Pengaturan Tampilan Dashboard:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const Spacer(),
+                            const Text('Tampilkan Statistik'),
+                            Switch(
+                              value: _showStats,
+                              onChanged: _toggleStats,
+                              activeColor: Colors.pink,
+                            ),
+                            const SizedBox(width: 20),
+                            const Text('Tampilkan Transaksi Terbaru'),
+                            Switch(
+                              value: _showRecentTransactions,
+                              onChanged: _toggleRecentTransactions,
+                              activeColor: Colors.pink,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
                       // Statistics Section
-                      GridView.count(
-                        crossAxisCount: 4, // Desktop layout 4 columns
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
+                      if (_showStats) ...[
+                        GridView.count(
+                          crossAxisCount: 4, // Desktop layout 4 columns
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
                         mainAxisSpacing: 20,
                         crossAxisSpacing: 20,
                         children: [
@@ -124,13 +191,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         ],
                       ),
                       const SizedBox(height: 30),
+                    ],
 
                       // Recent Transactions
-                      const Text(
-                        'Transaksi Terbaru',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
+                      if (_showRecentTransactions) ...[
+                        const Text(
+                          'Transaksi Terbaru',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
                       const SizedBox(height: 15),
                       transactions.isEmpty
                           ? const Center(
@@ -288,6 +357,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 );
                               },
                             ),
+                      ],
                     ],
                   ),
                 );
