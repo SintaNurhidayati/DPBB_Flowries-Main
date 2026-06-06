@@ -1,3 +1,4 @@
+// lib/pages/pembeli/riwayat_transaksi.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_navbar.dart';
@@ -52,7 +53,6 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
     if (userId != null) {
       _checkAllReviewStatuses();
     } else if (mounted) {
-      // Jika tidak ada session, arahkan ke login
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan login terlebih dahulu')),
       );
@@ -338,6 +338,10 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
     final isMenungguHarga = status == 'menunggu_harga_admin';
     final itemsArray = transaction['itemsArray'] as List<dynamic>? ?? [];
     final isSelesai = status == 'selesai' || status == 'Berhasil';
+    
+    // 🔥 CEK TIPE PESANAN
+    final tipePesanan = transaction['tipePesanan'] ?? 'katalog';
+    final isCustomOrder = tipePesanan == 'custom';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -351,6 +355,7 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // HEADER
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -375,7 +380,10 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Order #${transaction['id']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        Text(
+                          isCustomOrder ? 'Custom #${transaction['id']}' : 'Order #${transaction['id']}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
                         const SizedBox(height: 4),
                         Text(transaction['tanggal'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
                       ],
@@ -400,6 +408,8 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
               ],
             ),
           ),
+          
+          // BODY
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -407,6 +417,7 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
               children: [
                 const Text('Detail Produk', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
+                
                 if (itemsArray.isNotEmpty)
                   ...itemsArray.map((item) {
                     final qty = item['quantity'] ?? 1;
@@ -452,9 +463,12 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                   })
                 else
                   Text(transaction['items'] ?? '', style: TextStyle(fontSize: 13, color: Colors.grey.shade800)),
+                
                 const SizedBox(height: 16),
                 Divider(color: Colors.grey.shade100, height: 1),
                 const SizedBox(height: 16),
+                
+                // TOTAL & ACTION BUTTONS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -510,13 +524,20 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                       ),
                   ],
                 ),
-                if (transaction['buktiPembayaran'] != null && transaction['buktiPembayaran'].toString().isNotEmpty)
+
+                // 🔥 TAMPILKAN REFERENSI GAMBAR UNTUK CUSTOM ORDER
+                if (isCustomOrder && 
+                    transaction['referensiGambar'] != null && 
+                    transaction['referensiGambar'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Bukti Pembayaran:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                        const Text(
+                          '📷 Gambar Referensi Custom:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: () {
@@ -526,11 +547,20 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Padding(padding: EdgeInsets.all(16), child: Text('Bukti Pembayaran', style: TextStyle(fontWeight: FontWeight.bold))),
+                                    const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
+                                        'Referensi Custom Order',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
                                     SizedBox(
                                       height: 400,
                                       width: double.infinity,
-                                      child: Image.memory(base64Decode(transaction['buktiPembayaran']), fit: BoxFit.contain),
+                                      child: Image.memory(
+                                        base64Decode(transaction['referensiGambar']),
+                                        fit: BoxFit.contain,
+                                      ),
                                     ),
                                     const SizedBox(height: 16),
                                   ],
@@ -541,10 +571,79 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
                           child: Container(
                             height: 80,
                             width: 80,
-                            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.memory(base64Decode(transaction['buktiPembayaran']), fit: BoxFit.cover),
+                              child: Image.memory(
+                                base64Decode(transaction['referensiGambar']),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // 🔥 TAMPILKAN BUKTI PEMBAYARAN UNTUK TRANSAKSI BIASA (BUKAN CUSTOM)
+                if (!isCustomOrder && 
+                    transaction['buktiPembayaran'] != null && 
+                    transaction['buktiPembayaran'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '💳 Bukti Pembayaran:',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => Dialog(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
+                                        'Bukti Pembayaran',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 400,
+                                      width: double.infinity,
+                                      child: Image.memory(
+                                        base64Decode(transaction['buktiPembayaran']),
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 80,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.memory(
+                                base64Decode(transaction['buktiPembayaran']),
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
                         ),
@@ -583,6 +682,7 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
       ),
       body: Column(
         children: [
+          // TAB FILTER
           Container(
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -598,6 +698,8 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
               ],
             ),
           ),
+          
+          // LIST TRANSAKSI
           Expanded(
             child: transactions.isEmpty
                 ? Center(
