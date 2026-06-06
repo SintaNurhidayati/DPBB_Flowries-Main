@@ -1,4 +1,3 @@
-// lib/pages/admin/akun_pembeli_page.dart
 import 'package:flutter/material.dart';
 import '../../services/user_service.dart';
 import '../../widgets/admin_layout.dart';
@@ -54,12 +53,6 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = _userService.userType == 'admin';
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    // 🔥 RESPONSIVE CROSS AXIS COUNT
-    int crossAxisCount = 3;
-    if (screenWidth < 900) crossAxisCount = 2;
-    if (screenWidth < 600) crossAxisCount = 1;
 
     if (!isAdmin) {
       return const Scaffold(
@@ -84,7 +77,7 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.pink,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
             ),
           ),
@@ -126,11 +119,11 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(20),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    childAspectRatio: 1.8, // 🔥 UBAH AGAR LEBIH TINGGI
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3, // Desktop view usually 3 or 4
+                    childAspectRatio: 2.0,
+                    crossAxisSpacing: 20,
+                    mainAxisSpacing: 20,
                   ),
                   itemCount: sortedUsers.length,
                   itemBuilder: (context, index) {
@@ -138,7 +131,7 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                     final isPembeli = (user['tipeUser'] ?? 'pembeli') == 'pembeli';
 
                     return Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(
@@ -157,26 +150,24 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Header Row
                           Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
                                 child: Text(
                                   user['nama'] ?? '-',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                    fontSize: 18,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 12,
+                                  vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
                                   color: isPembeli ? Colors.pink.shade50 : Colors.blue.shade50,
@@ -188,7 +179,7 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                                 child: Text(
                                   isPembeli ? ((user['isActive'] ?? 1) == 1 ? 'PEMBELI' : 'NONAKTIF') : 'ADMIN',
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: isPembeli ? ((user['isActive'] ?? 1) == 1 ? Colors.pink.shade700 : Colors.red.shade700) : Colors.blue.shade700,
                                   ),
@@ -196,69 +187,56 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
-                          
-                          // Email
+                          const SizedBox(height: 16),
                           Row(
                             children: [
-                              const Icon(Icons.email, size: 14, color: Colors.grey),
-                              const SizedBox(width: 6),
+                              const Icon(Icons.email, size: 16, color: Colors.grey),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   user['email'] ?? '-',
-                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  style: const TextStyle(color: Colors.black87),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          
-                          // Phone
+                          const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.phone, size: 14, color: Colors.grey),
-                              const SizedBox(width: 6),
+                              const Icon(Icons.phone, size: 16, color: Colors.grey),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   user['noTelepon'] ?? '-',
-                                  style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                  style: const TextStyle(color: Colors.black87),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
-                          
-                          // Alamat (jika ada)
-                          if (user['alamat'] != null && user['alamat'] != '-' && user['alamat'].toString().isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    user['alamat'] ?? '-',
-                                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                            if (user['alamat'] != null && user['alamat'] != '-') ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(Icons.location_on, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      user['alamat'] ?? '-',
+                                      style: const TextStyle(color: Colors.black87),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          
-                          const Spacer(),
-                          
-                          // 🔥 BUTTON ROW YANG SUDAH DIPERBAIKI (TIDAK OVERFLOW)
-                          Row(
-                            children: [
-                              // Tombol Nonaktifkan/Aktifkan
-                              Expanded(
-                                flex: 1,
-                                child: SizedBox(
-                                  height: 36,
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
                                   child: OutlinedButton(
                                     onPressed: isPembeli
                                         ? () async {
@@ -271,7 +249,6 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                                           }
                                         : null,
                                     style: OutlinedButton.styleFrom(
-                                      padding: EdgeInsets.zero,
                                       foregroundColor: (user['isActive'] ?? 1) == 1
                                           ? Colors.orange
                                           : Colors.green,
@@ -280,21 +257,14 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                                             ? Colors.orange
                                             : Colors.green,
                                       ),
-                                      textStyle: const TextStyle(fontSize: 11),
                                     ),
                                     child: Text((user['isActive'] ?? 1) == 1
-                                        ? 'Nonaktif'
+                                        ? 'Nonaktifkan'
                                         : 'Aktifkan'),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              
-                              // Tombol Hapus
-                              Expanded(
-                                flex: 1,
-                                child: SizedBox(
-                                  height: 36,
+                                const SizedBox(width: 8),
+                                Expanded(
                                   child: ElevatedButton(
                                     onPressed: isPembeli
                                         ? () async {
@@ -331,16 +301,13 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white,
-                                      padding: EdgeInsets.zero,
-                                      textStyle: const TextStyle(fontSize: 11),
                                     ),
                                     child: const Text('Hapus'),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                          ],
                       ),
                     );
                   },

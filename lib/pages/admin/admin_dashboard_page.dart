@@ -91,14 +91,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     return {
       'totalProduk': totalProduk,
+    }..addAll({
       'totalTransaksi': totalTransaksi,
       'totalPenjualan': totalPenjualan,
       'totalPembeli': totalPembeli,
-    };
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Mengambil lebar layar HP untuk menentukan jumlah kolom secara dinamis
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth > 600 ? 4 : 2; // Kalau di HP jadi 2 kolom, kalau layar lebar (web/tablet) jadi 4 kolom
+
     return AdminLayout(
       title: 'Dashboard',
       selectedIndex: 0,
@@ -115,37 +120,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 final stats = _calculateStats(products, transactions);
 
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Pengaturan Shared Preferences Toggles
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                      // 1. PERBAIKAN: Pengaturan Toggles Menggunakan ExpansionTile (Biar Hemat Tempat & Ga Overflow)
+                      Card(
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
+                          side: BorderSide(color: Colors.grey[200]!),
                         ),
-                        child: Row(
+                        child: ExpansionTile(
+                          leading: const Icon(Icons.settings, color: Colors.grey),
+                          title: const Text(
+                            'Pengaturan Tampilan',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
                           children: [
-                            const Icon(Icons.settings, color: Colors.grey),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Pengaturan Tampilan Dashboard:',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const Spacer(),
-                            const Text('Tampilkan Statistik'),
-                            Switch(
+                            SwitchListTile(
+                              title: const Text('Tampilkan Statistik', style: TextStyle(fontSize: 13)),
                               value: _showStats,
                               onChanged: _toggleStats,
                               activeColor: Colors.pink,
                             ),
-                            const SizedBox(width: 20),
-                            const Text('Tampilkan Transaksi Terbaru'),
-                            Switch(
+                            SwitchListTile(
+                              title: const Text('Tampilkan Transaksi Terbaru', style: TextStyle(fontSize: 13)),
                               value: _showRecentTransactions,
                               onChanged: _toggleRecentTransactions,
                               activeColor: Colors.pink,
@@ -153,216 +153,183 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
 
-                      // Statistics Section
+                      // 2. PERBAIKAN: GridView Statistik yang Responsif (2 Kolom di HP)
                       if (_showStats) ...[
                         GridView.count(
-                          crossAxisCount: 4, // Desktop layout 4 columns
+                          crossAxisCount: crossAxisCount, 
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                        mainAxisSpacing: 20,
-                        crossAxisSpacing: 20,
-                        children: [
-                          _buildStatCard(
-                            'Produk',
-                            '${stats['totalProduk']}',
-                            Icons.shopping_bag,
-                            Colors.blue,
-                          ),
-                          _buildStatCard(
-                            'Transaksi',
-                            '${stats['totalTransaksi']}',
-                            Icons.receipt,
-                            Colors.green,
-                          ),
-                          _buildStatCard(
-                            'Penjualan',
-                            'Rp ${(stats['totalPenjualan'] / 1000000).toStringAsFixed(1)}M',
-                            Icons.trending_up,
-                            Colors.orange,
-                          ),
-                          _buildStatCard(
-                            'Pembeli',
-                            '${stats['totalPembeli']}',
-                            Icons.people,
-                            Colors.purple,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 30),
-                    ],
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 1.1, // Mengatur rasio kotak biar pas
+                          children: [
+                            _buildStatCard(
+                              'Produk',
+                              '${stats['totalProduk']}',
+                              Icons.shopping_bag,
+                              Colors.blue,
+                            ),
+                            _buildStatCard(
+                              'Transaksi',
+                              '${stats['totalTransaksi']}',
+                              Icons.receipt,
+                              Colors.green,
+                            ),
+                            _buildStatCard(
+                              'Penjualan',
+                              'Rp ${(stats['totalPenjualan'] / 1000).toStringAsFixed(0)}K', // Diubah ke Kilo (Ribu) atau sesuaikan kebutuhan display nilainya
+                              Icons.trending_up,
+                              Colors.orange,
+                            ),
+                            _buildStatCard(
+                              'Pembeli',
+                              '${stats['totalPembeli']}',
+                              Icons.people,
+                              Colors.purple,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                      ],
 
-                      // Recent Transactions
+                      // 3. Recent Transactions Section
                       if (_showRecentTransactions) ...[
                         const Text(
                           'Transaksi Terbaru',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                      const SizedBox(height: 15),
-                      transactions.isEmpty
-                          ? const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(20),
-                                child: Text('Tidak ada transaksi'),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: transactions.length,
-                              itemBuilder: (context, index) {
-                                final transaction = transactions[index];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border:
-                                        Border.all(color: Colors.grey[300]!),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.1),
-                                        spreadRadius: 1,
-                                        blurRadius: 5,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              transaction['id'] ?? '',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Pembeli: ${transaction['pembeli']}',
-                                              style: const TextStyle(
-                                                fontSize: 13,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Rp ${transaction['total']}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.pink,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'Tanggal: ${transaction['tanggal']}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Column(
+                        const SizedBox(height: 12),
+                        transactions.isEmpty
+                            ? const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Text('Tidak ada transaksi'),
+                                ),
+                              )
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: transactions.length,
+                                itemBuilder: (context, index) {
+                                  final transaction = transactions[index];
+                                  return Card(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: BorderSide(color: Colors.grey[200]!),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: _getStatusColor(
-                                                transaction['status'] ?? '',
-                                              ).withOpacity(0.1),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            child: Text(
-                                              (transaction['status'] ?? '')
-                                                  .toString()
-                                                  .toUpperCase(),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                                color: _getStatusColor(
-                                                  transaction['status'] ?? '',
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  transaction['id'] ?? '',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 13,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
-                                              ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Pembeli: ${transaction['pembeli']}',
+                                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Rp ${transaction['total']}',
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.pink,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'Tanggal: ${transaction['tanggal']}',
+                                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          const SizedBox(height: 12),
-                                          IconButton(
-                                            icon: const Icon(Icons.info_outline,
-                                                size: 24),
-                                            onPressed: () {
-                                              // Dialog untuk detail transaksi
-                                              showDialog(
-                                                context: context,
-                                                builder: (context) =>
-                                                    AlertDialog(
-                                                  title: Text(
-                                                      transaction['id'] ?? ''),
-                                                  content: Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                          'Pembeli: ${transaction['pembeli']}'),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                          'Items: ${transaction['items']}'),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                          'Total: Rp ${transaction['total']}'),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                          'Status: ${transaction['status']}'),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                          'Tanggal: ${transaction['tanggal']}'),
-                                                    ],
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.pop(
-                                                              context),
-                                                      child: const Text('Tutup'),
-                                                    ),
-                                                  ],
+                                          const SizedBox(width: 8),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                decoration: BoxDecoration(
+                                                  color: _getStatusColor(transaction['status'] ?? '').withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
                                                 ),
-                                              );
-                                            },
-                                            tooltip: 'Lihat detail',
+                                                child: Text(
+                                                  (transaction['status'] ?? '').toString().toUpperCase(),
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: _getStatusColor(transaction['status'] ?? ''),
+                                                  ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.info_outline, size: 20, color: Colors.grey),
+                                                onPressed: () {
+                                                  _showDetailDialog(context, transaction);
+                                                },
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
+                                    ),
+                                  );
+                                },
+                              ),
                       ],
                     ],
                   ),
                 );
               },
             ),
+    );
+  }
+
+  // Metode pembantu untuk memisahkan Dialog kode agar build utama lebih bersih
+  void _showDetailDialog(BuildContext context, Map<String, dynamic> transaction) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(transaction['id'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pembeli: ${transaction['pembeli']}'),
+            const SizedBox(height: 8),
+            Text('Items: ${transaction['items']}'),
+            const SizedBox(height: 8),
+            Text('Total: Rp ${transaction['total']}'),
+            const SizedBox(height: 8),
+            Text('Status: ${transaction['status']}'),
+            const SizedBox(height: 8),
+            Text('Tanggal: ${transaction['tanggal']}'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -373,36 +340,31 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: Colors.grey[200]!),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 40),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
-          ),
+          Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
           Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+            title,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
+          FittedBox( // Supaya teks angka otomatis mengecil jika terlalu panjang
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

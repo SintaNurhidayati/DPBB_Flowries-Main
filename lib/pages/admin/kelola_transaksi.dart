@@ -25,13 +25,26 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
       case 'selesai':
         return Colors.green;
       case 'diproses':
+      case 'menunggu_verifikasi_admin':
         return Colors.orange;
       case 'menunggu':
+      case 'menunggu_pembayaran':
         return Colors.blue;
       case 'dibatalkan':
         return Colors.red;
       default:
         return Colors.grey;
+    }
+  }
+
+  String _formatStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'menunggu_verifikasi_admin':
+        return 'MENUNGGU VERIFIKASI';
+      case 'menunggu_pembayaran':
+        return 'MENUNGGU PEMBAYARAN';
+      default:
+        return status.toUpperCase();
     }
   }
 
@@ -141,6 +154,7 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Filter Chips Status
           Padding(
             padding: const EdgeInsets.all(20),
             child: SingleChildScrollView(
@@ -149,6 +163,7 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                 children: [
                   'semua',
                   'menunggu',
+                  'menunggu_verifikasi_admin',
                   'diproses',
                   'selesai',
                   'dibatalkan'
@@ -157,7 +172,7 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                     padding: const EdgeInsets.only(right: 12),
                     child: FilterChip(
                       label: Text(
-                        status.toUpperCase(),
+                        _formatStatusText(status),
                         style: TextStyle(
                           color: selectedStatus == status
                               ? Colors.white
@@ -165,6 +180,7 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                           fontWeight: selectedStatus == status
                               ? FontWeight.bold
                               : FontWeight.normal,
+                          fontSize: 12,
                         ),
                       ),
                       selected: selectedStatus == status,
@@ -181,6 +197,8 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
               ),
             ),
           ),
+          
+          // Daftar Grid Transaksi
           Expanded(
             child: ValueListenableBuilder<List<Map<String, dynamic>>>(
               valueListenable: _transactionService.transactionsNotifier,
@@ -203,16 +221,18 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                 return GridView.builder(
                   padding: const EdgeInsets.all(20),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2, // Desktop 2 columns for transactions
-                    childAspectRatio: 1.7, // Lower ratio for more vertical space
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.95, // Rasio diperkecil agar card memanjang ke bawah dan memberikan ruang tombol
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
                   ),
                   itemCount: filteredTransactions.length,
                   itemBuilder: (context, index) {
                     final transaction = filteredTransactions[index];
+                    final currentStatus = (transaction['status'] ?? '').toString();
+
                     return Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: Colors.grey[200]!),
@@ -229,32 +249,35 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Bagian Atas: ID & Label Status
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'ID: ${transaction['id']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              Expanded(
+                                child: Text(
+                                  'ID: ${transaction['id']}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: 10,
+                                  vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: _getStatusColor(
-                                    transaction['status'] ?? '',
-                                  ).withOpacity(0.1),
+                                  color: _getStatusColor(currentStatus).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  (transaction['status'] ?? '').toString().toUpperCase(),
+                                  _formatStatusText(currentStatus),
                                   style: TextStyle(
-                                    color: _getStatusColor(transaction['status'] ?? ''),
-                                    fontSize: 12,
+                                    color: _getStatusColor(currentStatus),
+                                    fontSize: 10,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -262,29 +285,33 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                             ],
                           ),
                           const SizedBox(height: 12),
+                          
+                          // Detail Item & Alamat
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  transaction['items'] ?? '',
-                                  style: const TextStyle(fontSize: 14, color: Colors.black87),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Alamat: ${transaction['alamat'] ?? '-'}',
-                                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    transaction['items'] ?? '',
+                                    style: const TextStyle(fontSize: 13, color: Colors.black87),
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Alamat: ${transaction['alamat'] ?? '-'}',
+                                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
+                          
+                          // Bukti Pembayaran jika ada
                           if (transaction['buktiPembayaran'] != null && transaction['buktiPembayaran'] != '')
                             GestureDetector(
                               onTap: () {
@@ -304,18 +331,25 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4), border: Border.all(color: Colors.blue.shade200)),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: Colors.blue.shade200),
+                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.image, size: 16, color: Colors.blue.shade700),
+                                    Icon(Icons.image, size: 14, color: Colors.blue.shade700),
                                     const SizedBox(width: 4),
-                                    Text('Lihat Bukti', style: TextStyle(fontSize: 12, color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
+                                    Text('Lihat Bukti', style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold)),
                                   ],
                                 ),
                               ),
                             ),
-                          const Spacer(),
+                          
+                          const Divider(height: 20),
+                          
+                          // Bagian Bawah: Harga, Tanggal, dan Tombol Aksi
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -328,66 +362,71 @@ class _KelolaTransaksiState extends State<KelolaTransaksi> {
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: Colors.pink,
-                                        fontSize: 16,
+                                        fontSize: 15,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     Text(
                                       transaction['tanggal'] ?? 'N/A',
-                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                                     ),
                                   ],
                                 ),
                               ),
-                                Row(
-                                  children: [
-                                    if (transaction['status'] == 'menunggu_verifikasi_admin')
-                                      ElevatedButton.icon(
+                              const SizedBox(width: 8),
+                              
+                              // Susunan Tombol secara Vertikal agar hemat ruang kesamping
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (currentStatus == 'menunggu_verifikasi_admin' || currentStatus == 'menunggu')
+                                    SizedBox(
+                                      height: 28,
+                                      child: ElevatedButton.icon(
                                         onPressed: () => _updateStatus(transaction, 'diproses'),
-                                        icon: const Icon(Icons.verified, size: 16),
-                                        label: const Text('Konfirmasi'),
+                                        icon: Icon(currentStatus == 'menunggu_verifikasi_admin' ? Icons.verified : Icons.sync, size: 12),
+                                        label: Text(currentStatus == 'menunggu_verifikasi_admin' ? 'Konfirmasi' : 'Proses', style: const TextStyle(fontSize: 10)),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.blue,
                                           foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                         ),
                                       ),
-                                    if (transaction['status'] == 'menunggu')
-                                      ElevatedButton.icon(
-                                        onPressed: () => _updateStatus(transaction, 'diproses'),
-                                        icon: const Icon(Icons.sync, size: 16),
-                                        label: const Text('Proses'),
+                                    ),
+                                  if (currentStatus == 'diproses')
+                                    SizedBox(
+                                      height: 28,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => _updateStatus(transaction, 'selesai'),
+                                        icon: const Icon(Icons.check, size: 12),
+                                        label: const Text('Selesai', style: TextStyle(fontSize: 10)),
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
+                                          backgroundColor: Colors.green,
                                           foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                         ),
                                       ),
-                                  if (transaction['status'] == 'diproses')
-                                    ElevatedButton.icon(
-                                      onPressed: () => _updateStatus(transaction, 'selesai'),
-                                      icon: const Icon(Icons.check, size: 16),
-                                      label: const Text('Selesai'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    ),
+                                  if (currentStatus != 'selesai' && currentStatus != 'dibatalkan') ...[
+                                    const SizedBox(height: 4),
+                                    SizedBox(
+                                      height: 24,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => _cancelTransaction(transaction),
+                                        icon: const Icon(Icons.close, size: 10),
+                                        label: const Text('Batal', style: TextStyle(fontSize: 9)),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                        ),
                                       ),
                                     ),
-                                  if (transaction['status'] != 'selesai' && transaction['status'] != 'dibatalkan')
-                                    const SizedBox(width: 8),
-                                  if (transaction['status'] != 'selesai' && transaction['status'] != 'dibatalkan')
-                                    ElevatedButton.icon(
-                                      onPressed: () => _cancelTransaction(transaction),
-                                      icon: const Icon(Icons.close, size: 16),
-                                      label: const Text('Batal'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                                      ),
-                                    ),
+                                  ],
                                 ],
                               ),
                             ],
