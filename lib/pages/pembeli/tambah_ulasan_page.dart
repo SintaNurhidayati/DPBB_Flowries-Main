@@ -107,7 +107,6 @@ class _TambahUlasanPageState extends State<TambahUlasanPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      // Ambil user ID dari shared_preferensce
       final userId = await _session.getUserId();
       
       if (userId == null) {

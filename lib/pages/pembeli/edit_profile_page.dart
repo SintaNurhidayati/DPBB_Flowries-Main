@@ -54,7 +54,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      // In a real app, update DB. Here we just update the in-memory currentUser for demo
       final updatedUser = {
         ..._userService.currentUser,
         'nama': _namaCtrl.text,

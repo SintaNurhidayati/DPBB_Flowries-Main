@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5, // Update version to 5 for new tables
+      version: 5, 
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -205,7 +205,7 @@ class DatabaseHelper {
     ''');
   }
 
-  // ============ PRODUCT METHODS ============
+  // PRODUCT METHODS
   Future<Map<String, dynamic>?> getProductById(int id) async {
     final db = await instance.database;
     final maps = await db.query(
@@ -242,7 +242,7 @@ class DatabaseHelper {
     return await db.delete('products', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ============ REVIEW METHODS ============
+  // REVIEW METHODS
   Future<List<Map<String, dynamic>>> getReviewsByProduct(int productId) async {
     final db = await instance.database;
     return await db.query(
@@ -253,7 +253,7 @@ class DatabaseHelper {
     );
   }
 
-  // ============ CUSTOM FLOWERS ============
+  // CUSTOM FLOWERS
   Future<List<Map<String, dynamic>>> getCustomFlowers() async {
     final db = await database;
     return await db.query('custom_flowers', orderBy: 'createdAt DESC');
@@ -281,7 +281,7 @@ class DatabaseHelper {
     return await db.delete('custom_flowers', where: 'id = ?', whereArgs: [id]);
   }
 
-  // ============ CUSTOM WRAPPINGS ============
+  // CUSTOM WRAPPINGS
   Future<List<Map<String, dynamic>>> getCustomWrappings() async {
     final db = await database;
     return await db.query('custom_wrappings', orderBy: 'createdAt DESC');
@@ -313,7 +313,7 @@ class DatabaseHelper {
     );
   }
 
-  // ============ CUSTOM SIZES ============
+  // CUSTOM SIZES
   Future<List<Map<String, dynamic>>> getCustomSizes() async {
     final db = await database;
     return await db.query('custom_sizes', orderBy: 'createdAt DESC');

@@ -1,4 +1,3 @@
-// lib/pages/pembeli/riwayat_transaksi.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../widgets/custom_navbar.dart';
@@ -339,7 +338,6 @@ class _RiwayatTransaksiPageState extends State<RiwayatTransaksiPage> {
     final itemsArray = transaction['itemsArray'] as List<dynamic>? ?? [];
     final isSelesai = status == 'selesai' || status == 'Berhasil';
     
-    // 🔥 CEK TIPE PESANAN
     final tipePesanan = transaction['tipePesanan'] ?? 'katalog';
     final isCustomOrder = tipePesanan == 'custom';
 

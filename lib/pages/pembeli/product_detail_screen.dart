@@ -1,15 +1,14 @@
-// lib/pages/pembeli/product_detail_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
 import '../../services/review_service.dart';
 import '../../widgets/custom_quantity_selector.dart';
 import '../../services/cart_service.dart';
-import '../../services/session_preferences.dart';  // ✅ TAMBAHKAN
+import '../../services/session_preferences.dart'; 
 import 'cart_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
-  final int productId;  // ✅ HANYA productId, TIDAK PERLU userId
+  final int productId;  
 
   const ProductDetailScreen({
     super.key,
@@ -34,8 +33,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<Map<String, dynamic>> _reviews = [];
   int _cartCount = 0;
   final ReviewService _reviewService = ReviewService();
-  final SessionPreferences _session = SessionPreferences();  // ✅ TAMBAHKAN
-  String? _userId;  // ✅ TAMBAHKAN
+  final SessionPreferences _session = SessionPreferences();  
+  String? _userId;  
 
   final String _defaultImage = 'assets/images/placeholder.png';
 
@@ -55,7 +54,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
-  // ✅ TAMBAHKAN METHOD INI
   Future<void> _loadUserId() async {
     final userId = await _session.getUserId();
     setState(() {
@@ -160,7 +158,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     return basePrice * _sizePrices[_selectedSize]! * _quantity;
   }
 
-  // ✅ PERBAIKI _addToCart (tidak perlu userId)
   Future<void> _addToCart() async {
     try {
       final productMap = {
@@ -178,11 +175,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Produk ditambahkan ke keranjang')),
         );
-        // ✅ PERBAIKI: CartScreen TANPA parameter userId
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const CartScreen(),  // ✅ Tanpa parameter
+            builder: (context) => const CartScreen(),  
           ),
         );
       }
@@ -196,7 +192,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  // ✅ PERBAIKI _buyNow (tidak perlu userId)
   Future<void> _buyNow() async {
     try {
       final productMap = {
@@ -463,7 +458,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // ✅ PERBAIKI bagian actions di AppBar
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).primaryColor;

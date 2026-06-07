@@ -38,8 +38,7 @@ class _CartScreenState extends State<CartScreen> {
       _userId = userId;
       _isLoading = false;
     });
-    
-    // Jika tidak ada session, arahkan ke login
+
     if (userId == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silakan login terlebih dahulu')),

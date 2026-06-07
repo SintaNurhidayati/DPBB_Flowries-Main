@@ -24,7 +24,6 @@ class ProductService {
     final List<Map<String, dynamic>> maps = await db.query('products');
     
     if (maps.isEmpty) {
-      // Seed initial dummy data if DB is empty
       final initialProducts = [
         {
           'id': '1', 'nama': 'Bunga Mawar Merah', 'deskripsi': 'Bunga mawar merah segar berkualitas premium',

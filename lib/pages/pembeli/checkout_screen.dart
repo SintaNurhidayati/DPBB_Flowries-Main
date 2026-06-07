@@ -39,7 +39,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       setState(() {
         _alamatController.text = lastAddress;
       });
-      print('✅ Loaded last address: $lastAddress');
+      print('Loaded last address: $lastAddress');
     }
   }
 

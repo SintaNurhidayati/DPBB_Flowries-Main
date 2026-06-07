@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/transaction_service.dart';
 import '../../services/session_preferences.dart';
+import 'payment_success_page.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String? transactionId;
@@ -59,7 +60,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   bool _isProcessing = false;
 
-  
   @override
   void initState() {
     super.initState();
@@ -84,31 +84,57 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  // Load metode pembayaran dari Shared Preference
   Future<void> _loadSavedPaymentMethod() async {
     final savedMethod = await _session.getSelectedPaymentMethod();
     if (_paymentMethods.containsKey(savedMethod)) {
       setState(() {
         _selectedMethod = savedMethod;
       });
-      print('Loaded saved payment method: $savedMethod');
     }
   }
 
-  // Save metode pembayaran ke Shared Preference
   Future<void> _savePaymentMethod() async {
     await _session.saveSelectedPaymentMethod(_selectedMethod);
-    print('Saved payment method: $_selectedMethod');
+  }
+
+  Future<bool> _onWillPop() async {
+    // Tampilkan dialog konfirmasi
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Batalkan Pembayaran?'),
+        content: const Text(
+          'Apakah ingin membatalkan pembayaran? \n\n'
+          'Anda dapat melanjutkan pembayaran nanti.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Lanjutkan Bayar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Ya, Batalkan'),
+          ),
+        ],
+      ),
+    );
+    
+    if (result == true) {
+      Navigator.pushReplacementNamed(context, '/riwayat');
+      return false;
+    }
+    return false; 
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        // Ketika tekan back, kembali ke CartScreen dengan result false (tidak hapus item)
-        Navigator.pop(context, false);
-        return false;
-      },
+      onWillPop: _onWillPop, 
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Pembayaran', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -116,9 +142,36 @@ class _PaymentScreenState extends State<PaymentScreen> {
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () {
-              // Kembali ke CartScreen dengan result false
-              Navigator.pop(context, false);
+            onPressed: () async {
+              // menampilkan dialog konfirmasi
+              final result = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Batalkan Pembayaran?'),
+                  content: const Text(
+                     'Apakah ingin membatalkan pembayaran? \n\n'
+                      'Anda dapat melanjutkan pembayaran nanti.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Lanjutkan Bayar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Ya, Batalkan'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (result == true && mounted) {
+                Navigator.pushReplacementNamed(context, '/riwayat');
+              }
             },
           ),
         ),
@@ -267,15 +320,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                     setState(() => _isProcessing = true);
                     try {
-                      await _savePaymentMethod(); // Simpan metode pembayaran sebelum submit
+                      await _savePaymentMethod();
                       await _transactionService.updateTransactionPaymentProof(_transactionId!, _buktiPembayaranBase64!);
+                      
                       if (mounted) {
-                        // Payment success, kembali ke CartScreen dengan result true
-                        Navigator.pop(context, true);
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PaymentSuccessPage(),
+                          ),
+                        );
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Terjadi kesalahan: $e')));
+                        // 🔥 GAGAL UPLOAD: TETAP KE RIWAYAT (status masih menunggu)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal upload: $e. Silakan coba lagi nanti.')),
+                        );
                       }
                     } finally {
                       if (mounted) setState(() => _isProcessing = false);
@@ -290,6 +351,46 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                       : const Text('Selesaikan Pembayaran', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // 🔥 TOMBOL BATAL (Opsional)
+              TextButton(
+                onPressed: () async {
+                  final result = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Batalkan Pembayaran?'),
+                      content: const Text(
+                        'Apakah ingin membatalkan pembayaran? \n\n'
+                        'Anda dapat melanjutkan pembayaran nanti.',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Lanjutkan Bayar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Ya, Batalkan'),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (result == true && mounted) {
+                    Navigator.pushReplacementNamed(context, '/riwayat');
+                  }
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: const Text('Batalkan Pembayaran'),
               ),
             ],
           ),

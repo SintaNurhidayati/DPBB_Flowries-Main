@@ -22,7 +22,6 @@ class ReviewService {
     await refreshReviews();
   }
 
-  // HANYA SATU method refreshReviews (yang terbaru dengan reply)
   Future<void> refreshReviews() async {
     final db = await DatabaseHelper.instance.database;
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
@@ -102,7 +101,6 @@ class ReviewService {
       'createdAt': reviewData['tanggalUlasan'] ?? DateTime.now().toIso8601String(),
     };
 
-    // Tambahkan image_url jika ada
     if (reviewData.containsKey('image_url') && reviewData['image_url'] != null) {
       reviewMap['image_url'] = reviewData['image_url'];
     }

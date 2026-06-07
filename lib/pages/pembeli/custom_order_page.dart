@@ -443,7 +443,7 @@ Catatan Tambahan: ${_notesController.text}
               ),
               const SizedBox(height: 20),
 
-              // 🔥 Pilih Bunga - Wrap dengan Container yang punya height tetap
+              // Pilih Bunga - Wrap
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -461,7 +461,7 @@ Catatan Tambahan: ${_notesController.text}
                   const SizedBox(height: 10),
                   // 🔥 FIX OVERFLOW: Gunakan Container dengan height dan width terbatas
                   SizedBox(
-                    height: 100,  // 🔥 HEIGHT TETAP
+                    height: 100,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       itemCount: _allFlowers.length,
@@ -471,7 +471,7 @@ Catatan Tambahan: ${_notesController.text}
                         return GestureDetector(
                           onTap: () => _toggleFlowerSelection(flower),
                           child: Container(
-                            width: 85,  // 🔥 WIDTH TETAP
+                            width: 85,
                             margin: const EdgeInsets.only(right: 12),
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             decoration: BoxDecoration(
@@ -536,7 +536,7 @@ Catatan Tambahan: ${_notesController.text}
                 ),
               const SizedBox(height: 20),
 
-              // 🔥 Pilih Kemasan
+              // Pilih Kemasan
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -586,7 +586,7 @@ Catatan Tambahan: ${_notesController.text}
               ),
               const SizedBox(height: 20),
 
-              // 🔥 Pilih Ukuran - Wrap dengan Wrap agar tidak overflow
+              // Pilih Ukuran - Wrap
               const Text('📏 Pilih Ukuran', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               Wrap(

@@ -29,7 +29,6 @@ class TransactionService {
     final List<Map<String, dynamic>> maps = await db.query('transactions');
     
     if (maps.isEmpty) {
-      // Seed initial dummy data if DB is empty
       final initialTransactions = [
         {
           'id': 'TRX001',
