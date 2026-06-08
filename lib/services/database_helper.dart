@@ -20,7 +20,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5, 
+      version: 6, 
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -82,6 +82,11 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 6) {
+      await db.execute(
+        'ALTER TABLE products ADD COLUMN isActive INTEGER DEFAULT 1',
+      );
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -118,7 +123,8 @@ class DatabaseHelper {
         jumlahUlasan $integerType,
         createdAt $textType,
         createdBy $textType,
-        kategori $textType DEFAULT 'Semua'
+        kategori $textType DEFAULT 'Semua',
+        isActive INTEGER DEFAULT 1
       )
     ''');
 

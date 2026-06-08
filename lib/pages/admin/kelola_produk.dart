@@ -121,6 +121,16 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
     }
   }
 
+  Future<void> _toggleProductActive(Map<String, dynamic> product, bool currentStatus) async {
+    final updatedProduct = Map<String, dynamic>.from(product);
+    updatedProduct['isActive'] = currentStatus ? 0 : 1;
+    await _productService.updateProduct(product['id'].toString(), updatedProduct);
+    _loadData();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Produk berhasil di${currentStatus ? "nonaktifkan" : "aktifkan"}'))
+    );
+  }
+
   Future<void> _deleteProduct(Map<String, dynamic> product) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -382,11 +392,12 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                 final product = _catalogProducts[index];
                                 final price = (product['harga'] as num?)?.toDouble() ?? 0;
                                 final stock = product['stok'] ?? 0;
-                                final isActive = product['is_active'] == null || product['is_active'] == 1 || product['is_active'] == true;
+                                final isActive = product['isActive'] == null || product['isActive'] == 1 || product['isActive'] == true;
                                 
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  color: isActive ? Colors.white : Colors.grey.shade200,
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
                                     child: Row(
@@ -397,9 +408,12 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                           child: SizedBox(
                                             width: 70,
                                             height: 70,
-                                            child: ProductImage(
-                                              imageString: product['gambar'] ?? product['image'],
-                                              fit: BoxFit.cover,
+                                            child: Opacity(
+                                              opacity: isActive ? 1.0 : 0.5,
+                                              child: ProductImage(
+                                                imageString: product['gambar'] ?? product['image'],
+                                                fit: BoxFit.cover,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -407,9 +421,11 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                         // Tengah: Nama, Deskripsi, Stok (Bungkus Expanded agar text wrap otomatis)
                                         Expanded(
                                           flex: 3,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
+                                          child: Opacity(
+                                            opacity: isActive ? 1.0 : 0.5,
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
                                               Text(
                                                 product['nama'] ?? 'Produk',
                                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -442,6 +458,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                             ],
                                           ),
                                         ),
+                                        ),
                                         const SizedBox(width: 8),
                                         // Kanan: Harga & Tombol Aksi (Bungkus Expanded untuk alokasi sisa ruang terukur)
                                         Expanded(
@@ -460,18 +477,17 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
                                                   if (_canDisableProduct) ...[
-                                                    IconButton(
-                                                      icon: Icon(
-                                                        isActive ? Icons.visibility : Icons.visibility_off, 
-                                                        color: isActive ? Colors.green : Colors.grey, 
-                                                        size: 20
+                                                    SizedBox(
+                                                      height: 24,
+                                                      child: Transform.scale(
+                                                        scale: 0.7,
+                                                        child: Switch(
+                                                          value: isActive,
+                                                          onChanged: (bool value) => _toggleProductActive(product, isActive),
+                                                          activeColor: primaryColor,
+                                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                        ),
                                                       ),
-                                                      onPressed: () {
-                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur nonaktifkan produk sedang dikembangkan')));
-                                                      },
-                                                      padding: EdgeInsets.zero,
-                                                      constraints: const BoxConstraints(),
-                                                      visualDensity: VisualDensity.compact,
                                                     ),
                                                     const SizedBox(width: 8),
                                                   ],
