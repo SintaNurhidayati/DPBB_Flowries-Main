@@ -15,11 +15,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final ProductService _productService = ProductService();
   final TransactionService _transactionService = TransactionService();
   bool _isLoading = false;
-  
+
   // Dua variabel untuk Shared Preferences
   bool _showStats = true;
   bool _showRecentTransactions = true;
-
   @override
   void initState() {
     super.initState();
@@ -31,7 +30,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _showStats = prefs.getBool('admin_show_stats') ?? true;
-      _showRecentTransactions = prefs.getBool('admin_show_recent_transactions') ?? true;
+      _showRecentTransactions =
+          prefs.getBool('admin_show_recent_transactions') ?? true;
     });
   }
 
@@ -89,9 +89,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
     final totalPembeli = transactions.map((t) => t['pembeli']).toSet().length;
 
-    return {
-      'totalProduk': totalProduk,
-    }..addAll({
+    return {'totalProduk': totalProduk}..addAll({
       'totalTransaksi': totalTransaksi,
       'totalPenjualan': totalPenjualan,
       'totalPembeli': totalPembeli,
@@ -102,7 +100,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     // Mengambil lebar layar HP untuk menentukan jumlah kolom secara dinamis
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth > 600 ? 4 : 2; // Kalau di HP jadi 2 kolom, kalau layar lebar (web/tablet) jadi 4 kolom
+    final crossAxisCount = screenWidth > 600
+        ? 4
+        : 2; // Kalau di HP jadi 2 kolom, kalau layar lebar (web/tablet) jadi 4 kolom
 
     return AdminLayout(
       title: 'Dashboard',
@@ -132,20 +132,32 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           side: BorderSide(color: Colors.grey[200]!),
                         ),
                         child: ExpansionTile(
-                          leading: const Icon(Icons.settings, color: Colors.grey),
+                          leading: const Icon(
+                            Icons.settings,
+                            color: Colors.grey,
+                          ),
                           title: const Text(
                             'Pengaturan Tampilan',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
                           ),
                           children: [
                             SwitchListTile(
-                              title: const Text('Tampilkan Statistik', style: TextStyle(fontSize: 13)),
+                              title: const Text(
+                                'Tampilkan Statistik',
+                                style: TextStyle(fontSize: 13),
+                              ),
                               value: _showStats,
                               onChanged: _toggleStats,
                               activeColor: Colors.pink,
                             ),
                             SwitchListTile(
-                              title: const Text('Tampilkan Transaksi Terbaru', style: TextStyle(fontSize: 13)),
+                              title: const Text(
+                                'Tampilkan Transaksi Terbaru',
+                                style: TextStyle(fontSize: 13),
+                              ),
                               value: _showRecentTransactions,
                               onChanged: _toggleRecentTransactions,
                               activeColor: Colors.pink,
@@ -158,12 +170,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       // 2. PERBAIKAN: GridView Statistik yang Responsif (2 Kolom di HP)
                       if (_showStats) ...[
                         GridView.count(
-                          crossAxisCount: crossAxisCount, 
+                          crossAxisCount: crossAxisCount,
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio: 1.1, // Mengatur rasio kotak biar pas
+                          childAspectRatio:
+                              1.1, // Mengatur rasio kotak biar pas
                           children: [
                             _buildStatCard(
                               'Produk',
@@ -198,7 +211,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       if (_showRecentTransactions) ...[
                         const Text(
                           'Transaksi Terbaru',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         transactions.isEmpty
@@ -219,16 +235,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(color: Colors.grey[200]!),
+                                      side: BorderSide(
+                                        color: Colors.grey[200]!,
+                                      ),
                                     ),
                                     child: Padding(
                                       padding: const EdgeInsets.all(12),
                                       child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
                                         children: [
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   transaction['id'] ?? '',
@@ -236,12 +256,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 13,
                                                   ),
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   'Pembeli: ${transaction['pembeli']}',
-                                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                                  style: const TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.grey,
+                                                  ),
                                                 ),
                                                 const SizedBox(height: 4),
                                                 Text(
@@ -255,34 +279,57 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   'Tanggal: ${transaction['tanggal']}',
-                                                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                                  style: const TextStyle(
+                                                    fontSize: 11,
+                                                    color: Colors.grey,
+                                                  ),
                                                 ),
                                               ],
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.end,
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 10,
+                                                      vertical: 6,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: _getStatusColor(transaction['status'] ?? '').withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(20),
+                                                  color: _getStatusColor(
+                                                    transaction['status'] ?? '',
+                                                  ).withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
                                                 child: Text(
-                                                  (transaction['status'] ?? '').toString().toUpperCase(),
+                                                  (transaction['status'] ?? '')
+                                                      .toString()
+                                                      .toUpperCase(),
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
-                                                    color: _getStatusColor(transaction['status'] ?? ''),
+                                                    color: _getStatusColor(
+                                                      transaction['status'] ??
+                                                          '',
+                                                    ),
                                                   ),
                                                 ),
                                               ),
                                               IconButton(
-                                                icon: const Icon(Icons.info_outline, size: 20, color: Colors.grey),
+                                                icon: const Icon(
+                                                  Icons.info_outline,
+                                                  size: 20,
+                                                  color: Colors.grey,
+                                                ),
                                                 onPressed: () {
-                                                  _showDetailDialog(context, transaction);
+                                                  _showDetailDialog(
+                                                    context,
+                                                    transaction,
+                                                  );
                                                 },
                                               ),
                                             ],
@@ -303,11 +350,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   // Metode pembantu untuk memisahkan Dialog kode agar build utama lebih bersih
-  void _showDetailDialog(BuildContext context, Map<String, dynamic> transaction) {
+  void _showDetailDialog(
+    BuildContext context,
+    Map<String, dynamic> transaction,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(transaction['id'] ?? '', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: Text(
+          transaction['id'] ?? '',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,19 +405,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         children: [
           Icon(icon, color: color, size: 28),
           const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 4),
-          FittedBox( // Supaya teks angka otomatis mengecil jika terlalu panjang
+          FittedBox(
+            // Supaya teks angka otomatis mengecil jika terlalu panjang
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
         ],

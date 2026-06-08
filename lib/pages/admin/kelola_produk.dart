@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/product_service.dart';
 import '../../services/database_helper.dart';
 import '../../widgets/admin_layout.dart';
@@ -53,13 +54,43 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
   List<Map<String, dynamic>> _catalogProducts = [];
   bool _isLoading = true;
 
+  // SharedPreferences variables
+  bool _canDisableProduct = false;
+  bool _showLowStockWarning = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadPreferences();
     _loadData();
     _tabController.addListener(() {
+      setState(() {});
       if (!_tabController.indexIsChanging) _loadData();
+    });
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _canDisableProduct = prefs.getBool('allow_product_deactivation') ?? false;
+      _showLowStockWarning = prefs.getBool('show_low_stock_warning') ?? true;
+    });
+  }
+
+  Future<void> _toggleDisableProduct(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('allow_product_deactivation', value);
+    setState(() {
+      _canDisableProduct = value;
+    });
+  }
+
+  Future<void> _toggleLowStockWarning(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('show_low_stock_warning', value);
+    setState(() {
+      _showLowStockWarning = value;
     });
   }
 
@@ -283,25 +314,56 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
           // Bagian Tombol Tambah (Sekarang Hanya Icon Plus)
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (_tabController.index == 0) {
-                    final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahProdukPage()));
-                    if (result == true) _loadData();
-                  } else {
-                    _showAddComponentDialog();
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  padding: const EdgeInsets.all(12), // Padding seimbang untuk lingkaran/kotak rounded pas
-                  shape: const CircleBorder(), // Diubah jadi lingkaran biar estetik hanya isi plus (+)
-                  elevation: 2,
+            child: Column(
+              children: [
+                if (_tabController.index == 0) ...[
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: ExpansionTile(
+                      leading: Icon(Icons.settings, color: primaryColor),
+                      title: const Text('Pengaturan Katalog', style: TextStyle(fontWeight: FontWeight.bold)),
+                      children: [
+                        SwitchListTile(
+                          title: const Text('Izinkan Menonaktifkan Produk'),
+                          subtitle: const Text('Tampilkan opsi untuk menonaktifkan produk tanpa menghapusnya'),
+                          value: _canDisableProduct,
+                          onChanged: _toggleDisableProduct,
+                          activeColor: primaryColor,
+                        ),
+                        SwitchListTile(
+                          title: const Text('Peringatan Stok Menipis'),
+                          subtitle: const Text('Sorot produk dengan stok kurang dari 5'),
+                          value: _showLowStockWarning,
+                          onChanged: _toggleLowStockWarning,
+                          activeColor: primaryColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      if (_tabController.index == 0) {
+                        final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const TambahProdukPage()));
+                        if (result == true) _loadData();
+                      } else {
+                        _showAddComponentDialog();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      padding: const EdgeInsets.all(12), // Padding seimbang untuk lingkaran/kotak rounded pas
+                      shape: const CircleBorder(), // Diubah jadi lingkaran biar estetik hanya isi plus (+)
+                      elevation: 2,
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 24),
+                  ),
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 24),
-              ),
+              ],
             ),
           ),
           Expanded(
@@ -320,6 +382,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                 final product = _catalogProducts[index];
                                 final price = (product['harga'] as num?)?.toDouble() ?? 0;
                                 final stock = product['stok'] ?? 0;
+                                final isActive = product['is_active'] == null || product['is_active'] == 1 || product['is_active'] == true;
                                 
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 12),
@@ -364,12 +427,16 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                                 decoration: BoxDecoration(
-                                                  color: primaryColor.withOpacity(0.1),
+                                                  color: (stock < 5 && _showLowStockWarning) ? Colors.red.withOpacity(0.1) : primaryColor.withOpacity(0.1),
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
                                                   'Stok: $stock',
-                                                  style: TextStyle(fontSize: 10, color: primaryColor, fontWeight: FontWeight.bold),
+                                                  style: TextStyle(
+                                                    fontSize: 10, 
+                                                    color: (stock < 5 && _showLowStockWarning) ? Colors.red : primaryColor, 
+                                                    fontWeight: FontWeight.bold
+                                                  ),
                                                 ),
                                               ),
                                             ],
@@ -392,6 +459,22 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.end,
                                                 children: [
+                                                  if (_canDisableProduct) ...[
+                                                    IconButton(
+                                                      icon: Icon(
+                                                        isActive ? Icons.visibility : Icons.visibility_off, 
+                                                        color: isActive ? Colors.green : Colors.grey, 
+                                                        size: 20
+                                                      ),
+                                                      onPressed: () {
+                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur nonaktifkan produk sedang dikembangkan')));
+                                                      },
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                      visualDensity: VisualDensity.compact,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                  ],
                                                   IconButton(
                                                     icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
                                                     onPressed: () async {
