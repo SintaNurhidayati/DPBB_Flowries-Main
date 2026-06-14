@@ -19,7 +19,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
   final ProductService _productService = ProductService();
   late TabController _tabController;
   
-  // Data default untuk komponen custom (TIDAK BISA DIHAPUS)
+  //Data default untuk komponen custom (TIDAK BISA DIHAPUS)
   final List<Map<String, dynamic>> _defaultFlowers = const [
     {'id': 1, 'name': 'Mawar Merah', 'price': 15000, 'image_url': 'assets/images/mawar_merah.png', 'isDefault': true},
     {'id': 2, 'name': 'Tulip Kuning', 'price': 12000, 'image_url': 'assets/images/tulip_kuning.png', 'isDefault': true},
@@ -41,12 +41,12 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
     {'id': 3, 'name': 'Large', 'price': 50000, 'description': '30-35 batang', 'isDefault': true},
   ];
   
-  // Data dari database
+  //Data dari database
   List<Map<String, dynamic>> _dbFlowers = [];
   List<Map<String, dynamic>> _dbWrappings = [];
   List<Map<String, dynamic>> _dbSizes = [];
   
-  // Gabungan untuk ditampilkan
+  //Gabungan untuk ditampilkan
   List<Map<String, dynamic>> _displayFlowers = [];
   List<Map<String, dynamic>> _displayWrappings = [];
   List<Map<String, dynamic>> _displaySizes = [];
@@ -54,7 +54,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
   List<Map<String, dynamic>> _catalogProducts = [];
   bool _isLoading = true;
 
-  // SharedPreferences variables
+  //SharedPreferences variables
   bool _canDisableProduct = false;
   bool _showLowStockWarning = true;
 
@@ -255,14 +255,24 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: components.length,
-                  separatorBuilder: (_, __) => const Divider(),
+                  separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = components[index];
                     final isDefault = item['isDefault'] == true;
-                    return ListTile(
-                      leading: CircleAvatar(backgroundColor: primaryColor.withOpacity(0.1), child: Icon(icon, color: primaryColor, size: 20)),
-                      title: Text(item['name'], style: TextStyle(fontWeight: isDefault ? FontWeight.bold : FontWeight.normal)),
-                      subtitle: type == 'size' && item['description'] != null ? Text(item['description'], style: const TextStyle(fontSize: 12)) : null,
+
+                    //Widget dasar tile item komponen
+                    Widget tileContent = ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: primaryColor.withOpacity(0.1), 
+                        child: Icon(icon, color: primaryColor, size: 20),
+                      ),
+                      title: Text(
+                        item['name'], 
+                        style: TextStyle(fontWeight: isDefault ? FontWeight.bold : FontWeight.normal),
+                      ),
+                      subtitle: type == 'size' && item['description'] != null 
+                          ? Text(item['description'], style: const TextStyle(fontSize: 12)) 
+                          : null,
                       trailing: SizedBox(
                         width: 140,
                         child: Row(
@@ -291,6 +301,71 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                           ],
                         ),
                       ),
+                    );
+
+                    //Jika item DEFAULT, langsung kembalikan tileContent tanpa Dismissible (biar gabisa diswipe)
+                    if (isDefault) {
+                      return tileContent;
+                    }
+
+                    //Bisa di-swipe hapus
+                    return Dismissible(
+                      //Menggunakan kombinasi tipe dan ID
+                      key: Key('${type}_${item['id']}'),
+                      
+                      //gestur seret hanya ke kiri (End to Start)
+                      direction: DismissDirection.endToStart,
+                      
+                      background: Container(
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        color: Colors.redAccent.shade200,
+                        child: const Icon(
+                          Icons.delete,
+                          color: Colors.white,
+                        ),
+                      ),
+                      
+                      //Konfirmasi sebelum benar-benar menghilangkan item dari layar
+                      confirmDismiss: (direction) async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text('Hapus ${_getTypeName(type)}'),
+                            content: Text('Apakah Anda yakin ingin menghapus "${item['name']}"?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, true), 
+                                style: TextButton.styleFrom(foregroundColor: Colors.red), 
+                                child: const Text('Hapus'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return confirmed ?? false;
+                      },
+                      
+                      //setelah konfirmasi, manggil fungsi penghapusan dari database
+                      onDismissed: (direction) async {
+                        if (type == 'flower') {
+                          await DatabaseHelper.instance.deleteCustomFlower(item['id']);
+                        } else if (type == 'wrapping') {
+                          await DatabaseHelper.instance.deleteCustomWrapping(item['id']);
+                        } else if (type == 'size') {
+                          await DatabaseHelper.instance.deleteCustomSize(item['id']);
+                        }
+                        
+                        await _loadData();
+                        
+                        // feedback snackbar sukses
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('${_getTypeName(type)} "${item['name']}" berhasil dihapus')),
+                          );
+                        }
+                      },
+                      child: tileContent,
                     );
                   },
                 ),
@@ -321,7 +396,6 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
               ],
             ),
           ),
-          // Bagian Tombol Tambah (Sekarang Hanya Icon Plus)
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -366,8 +440,8 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
-                      padding: const EdgeInsets.all(12), // Padding seimbang untuk lingkaran/kotak rounded pas
-                      shape: const CircleBorder(), // Diubah jadi lingkaran biar estetik hanya isi plus (+)
+                      padding: const EdgeInsets.all(12), 
+                      shape: const CircleBorder(), 
                       elevation: 2,
                     ),
                     child: const Icon(Icons.add, color: Colors.white, size: 24),
@@ -382,7 +456,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                 : TabBarView(
                     controller: _tabController,
                     children: [
-                      // Tab 1: Katalog Produk
+                      //Katalog Produk
                       _catalogProducts.isEmpty
                           ? const Center(child: Text('Belum ada produk'))
                           : ListView.builder(
@@ -418,7 +492,6 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                           ),
                                         ),
                                         const SizedBox(width: 12),
-                                        // Tengah: Nama, Deskripsi, Stok (Bungkus Expanded agar text wrap otomatis)
                                         Expanded(
                                           flex: 3,
                                           child: Opacity(
@@ -460,7 +533,6 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                         ),
                                         ),
                                         const SizedBox(width: 8),
-                                        // Kanan: Harga & Tombol Aksi (Bungkus Expanded untuk alokasi sisa ruang terukur)
                                         Expanded(
                                           flex: 2,
                                           child: Column(
@@ -524,7 +596,7 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                               },
                             ),
                       
-                      // Tab 2: Komponen Custom
+                      //Komponen Custom
                       SingleChildScrollView(
                         padding: const EdgeInsets.all(16),
                         child: Column(

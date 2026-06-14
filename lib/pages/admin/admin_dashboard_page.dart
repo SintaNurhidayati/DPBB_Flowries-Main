@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/product_service.dart';
 import '../../services/transaction_service.dart';
 import '../../widgets/admin_layout.dart';
+import '../../widgets/admin_sales_chart.dart'; // 👈 1. IMPORT WIDGET GRAPHIC DI SINI
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -16,9 +17,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   final TransactionService _transactionService = TransactionService();
   bool _isLoading = false;
 
-  // Dua variabel untuk Shared Preferences
   bool _showStats = true;
   bool _showRecentTransactions = true;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +78,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     }
   }
 
+  //Perhitungan Statistik & Pengelompokan Omset Mingguan (W1-W5)
   Map<String, dynamic> _calculateStats(
     List<Map<String, dynamic>> products,
     List<Map<String, dynamic>> transactions,
@@ -89,20 +91,52 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
     final totalPembeli = transactions.map((t) => t['pembeli']).toSet().length;
 
-    return {'totalProduk': totalProduk}..addAll({
+    List<double> weeklyData = [0.0, 0.0, 0.0, 0.0, 0.0];
+
+    for (var t in transactions) {
+      final total = ((t['total'] ?? 0) as num).toDouble();
+      final dateStr = t['tanggal']?.toString() ?? ''; // Mengambil string "YYYY-MM-DD"
+
+      try {
+        final parts = dateStr.split('-');
+        if (parts.length == 3) {
+          //Ambil bagian paling kanan (Hari) dan ubah ke Integer
+          int day = int.parse(parts[2]);
+
+          //Tentukan balok minggu berdasarkan hari dalam kalender bulan berjalan
+          if (day <= 7) {
+            weeklyData[0] += total; //Minggu 1 (tanggal 1-7)
+          } else if (day <= 14) {
+            weeklyData[1] += total; //Minggu 2 (tanggal 8-14)
+          } else if (day <= 21) {
+            weeklyData[2] += total; //Minggu 3 (tanggal 15-21)
+          } else if (day <= 28) {
+            weeklyData[3] += total; //Minggu 4 (tanggal 22-28)
+          } else {
+            weeklyData[4] += total; //Minggu 5 (tanggal 29-31)
+          }
+        } else {
+          //Fallback jika format data tidak standard
+          weeklyData[0] += total;
+        }
+      } catch (e) {
+        weeklyData[0] += total;
+      }
+    }
+
+    return {
+      'totalProduk': totalProduk,
       'totalTransaksi': totalTransaksi,
       'totalPenjualan': totalPenjualan,
       'totalPembeli': totalPembeli,
-    });
+      'chartData': weeklyData, //Mengirim data array
+    };
   }
 
   @override
   Widget build(BuildContext context) {
-    // Mengambil lebar layar HP untuk menentukan jumlah kolom secara dinamis
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth > 600
-        ? 4
-        : 2; // Kalau di HP jadi 2 kolom, kalau layar lebar (web/tablet) jadi 4 kolom
+    final crossAxisCount = screenWidth > 600 ? 4 : 2;
 
     return AdminLayout(
       title: 'Dashboard',
@@ -124,7 +158,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // 1. PERBAIKAN: Pengaturan Toggles Menggunakan ExpansionTile (Biar Hemat Tempat & Ga Overflow)
                       Card(
                         elevation: 0,
                         shape: RoundedRectangleBorder(
@@ -167,7 +200,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const SizedBox(height: 16),
 
-                      // 2. PERBAIKAN: GridView Statistik yang Responsif (2 Kolom di HP)
                       if (_showStats) ...[
                         GridView.count(
                           crossAxisCount: crossAxisCount,
@@ -175,8 +207,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           physics: const NeverScrollableScrollPhysics(),
                           mainAxisSpacing: 12,
                           crossAxisSpacing: 12,
-                          childAspectRatio:
-                              1.1, // Mengatur rasio kotak biar pas
+                          childAspectRatio: 1.1,
                           children: [
                             _buildStatCard(
                               'Produk',
@@ -192,7 +223,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             _buildStatCard(
                               'Penjualan',
-                              'Rp ${(stats['totalPenjualan'] / 1000).toStringAsFixed(0)}K', // Diubah ke Kilo (Ribu) atau sesuaikan kebutuhan display nilainya
+                              'Rp ${(stats['totalPenjualan'] / 1000).toStringAsFixed(0)}K',
                               Icons.trending_up,
                               Colors.orange,
                             ),
@@ -205,10 +236,21 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           ],
                         ),
                         const SizedBox(height: 24),
+
+                        //PEMANGGILAN WIDGET GRAFIK
+                        const Text(
+                          'Tren Omset Penjualan Mingguan (Bulan Ini)',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        AdminSalesChart(salesData: stats['chartData']),
                       ],
 
-                      // 3. Recent Transactions Section
                       if (_showRecentTransactions) ...[
+                        const SizedBox(height: 24),
                         const Text(
                           'Transaksi Terbaru',
                           style: TextStyle(
@@ -293,11 +335,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 CrossAxisAlignment.end,
                                             children: [
                                               Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      horizontal: 10,
-                                                      vertical: 6,
-                                                    ),
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 6,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: _getStatusColor(
                                                     transaction['status'] ?? '',
@@ -308,7 +349,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                 child: Text(
                                                   (transaction['status'] ?? '')
                                                       .toString()
-                                                      .toUpperCase(),
+                                                      .toUpperCase()
+                                                      .replaceAll('_', ' '),
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
@@ -349,7 +391,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  // Metode pembantu untuk memisahkan Dialog kode agar build utama lebih bersih
   void _showDetailDialog(
     BuildContext context,
     Map<String, dynamic> transaction,
@@ -408,7 +449,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Text(title, style: const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 4),
           FittedBox(
-            // Supaya teks angka otomatis mengecil jika terlalu panjang
             fit: BoxFit.scaleDown,
             child: Text(
               value,
@@ -420,6 +460,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  //setting warna status transaksi
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'selesai':
@@ -427,6 +468,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       case 'diproses':
         return Colors.orange;
       case 'menunggu':
+      case 'menunggu_verifikasi_admin':
         return Colors.blue;
       default:
         return Colors.grey;
