@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/product_service.dart';
 import '../../services/transaction_service.dart';
 import '../../widgets/admin_layout.dart';
-import '../../widgets/admin_sales_chart.dart'; // 👈 1. IMPORT WIDGET GRAPHIC DI SINI
+import '../../widgets/admin_sales_chart.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
