@@ -312,6 +312,7 @@ class _LihatUlasanState extends State<LihatUlasan> {
                           border: Border.all(color: Colors.grey.shade300),
                         ),
                         child: DropdownButtonFormField<String>(
+                          isExpanded: true,
                           value: selectedSort,
                           icon: const Padding(
                             padding: EdgeInsets.only(right: 8.0),

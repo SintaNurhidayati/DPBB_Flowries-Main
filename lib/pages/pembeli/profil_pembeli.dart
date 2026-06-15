@@ -46,6 +46,7 @@ class _ProfilPembeliState extends State<ProfilPembeli> {
       'email': currentUser['email'] ?? '-',
       'noTelepon': currentUser['noTelepon'] ?? '-',
       'alamat': currentUser['alamat'] ?? '-',
+      'photo': currentUser['photo'],
       'noAnggota': 'FR${DateTime.now().year}0001',
       'tanggalGabung': DateTime.now().toString().split(' ')[0],
     };

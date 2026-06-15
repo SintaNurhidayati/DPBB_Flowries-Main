@@ -13,10 +13,18 @@ class CustomCaptcha extends StatefulWidget {
 class _CustomCaptchaState extends State<CustomCaptcha> {
   double _sliderPosition = 0.0;
   final double _sliderMax = 200.0;
-  final double _targetPosition = 150.0;
+  late double _targetPosition;
   final double _tolerance = 15.0;
   bool _isSuccess = false;
   String _captchaText = "Geser puzzle untuk verifikasi";
+
+  @override
+  void initState() {
+    super.initState();
+    final random = Random();
+    // Random position between 50 and _sliderMax (200)
+    _targetPosition = 50.0 + random.nextDouble() * (_sliderMax - 50.0);
+  }
 
   void _onPanUpdate(DragUpdateDetails details) {
     if (_isSuccess) return;

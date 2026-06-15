@@ -493,7 +493,6 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
-                                          flex: 3,
                                           child: Opacity(
                                             opacity: isActive ? 1.0 : 0.5,
                                             child: Column(
@@ -533,61 +532,58 @@ class _KelolaProdukState extends State<KelolaProduk> with SingleTickerProviderSt
                                         ),
                                         ),
                                         const SizedBox(width: 8),
-                                        Expanded(
-                                          flex: 2,
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.end,
-                                            children: [
-                                              Text(
-                                                'Rp ${price.toStringAsFixed(0)}',
-                                                style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                children: [
-                                                  if (_canDisableProduct) ...[
-                                                    SizedBox(
-                                                      height: 24,
-                                                      child: Transform.scale(
-                                                        scale: 0.7,
-                                                        child: Switch(
-                                                          value: isActive,
-                                                          onChanged: (bool value) => _toggleProductActive(product, isActive),
-                                                          activeColor: primaryColor,
-                                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                        ),
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            Text(
+                                              'Rp ${price.toStringAsFixed(0)}',
+                                              style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 13),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                if (_canDisableProduct) ...[
+                                                  SizedBox(
+                                                    height: 24,
+                                                    child: Transform.scale(
+                                                      scale: 0.7,
+                                                      child: Switch(
+                                                        value: isActive,
+                                                        onChanged: (bool value) => _toggleProductActive(product, isActive),
+                                                        activeColor: primaryColor,
+                                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                                       ),
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                  ],
-                                                  IconButton(
-                                                    icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                                    onPressed: () async {
-                                                      final result = await Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(builder: (context) => TambahProdukPage(product: product)),
-                                                      );
-                                                      if (result == true) _loadData();
-                                                    },
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    visualDensity: VisualDensity.compact,
                                                   ),
-                                                  const SizedBox(width: 12),
-                                                  IconButton(
-                                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                                    onPressed: () => _deleteProduct(product),
-                                                    padding: EdgeInsets.zero,
-                                                    constraints: const BoxConstraints(),
-                                                    visualDensity: VisualDensity.compact,
-                                                  ),
+                                                  const SizedBox(width: 8),
                                                 ],
-                                              ),
-                                            ],
-                                          ),
+                                                IconButton(
+                                                  icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                                                  onPressed: () async {
+                                                    final result = await Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(builder: (context) => TambahProdukPage(product: product)),
+                                                    );
+                                                    if (result == true) _loadData();
+                                                  },
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                                const SizedBox(width: 12),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                                  onPressed: () => _deleteProduct(product),
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                  visualDensity: VisualDensity.compact,
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
