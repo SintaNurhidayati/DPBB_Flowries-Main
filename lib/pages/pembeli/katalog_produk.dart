@@ -3,6 +3,7 @@ import '../../widgets/custom_navbar.dart';
 import '../../services/product_service.dart';
 import '../../widgets/cart_badge_icon.dart';
 import '../../widgets/product_image.dart';
+import '../../widgets/custom_range_slider.dart';
 
 class KatalogProduk extends StatefulWidget {
   const KatalogProduk({super.key});
@@ -110,11 +111,40 @@ class _KatalogProdukState extends State<KatalogProduk> {
     return filtered;
   }
 
+  Widget _buildPricePreset(String label, double min, double max) {
+    final primaryColor = Theme.of(context).primaryColor;
+    final isActive = _priceRange.start == min && _priceRange.end == max;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _priceRange = RangeValues(min, max);
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isActive ? primaryColor : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(16),
+          border: isActive ? null : Border.all(color: Colors.grey.shade200),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: isActive ? Colors.white : Colors.black87,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterDrawer() {
     final primaryColor = Theme.of(context).primaryColor;
     
     return Drawer(
-      width: MediaQuery.of(context).size.width * 0.7, // Lebar 70% dari layar (lebih kecil)
+      width: MediaQuery.of(context).size.width * 0.7,
       backgroundColor: Colors.white,
       child: SafeArea(
         child: Column(
@@ -206,30 +236,43 @@ class _KatalogProdukState extends State<KatalogProduk> {
                     
                     const SizedBox(height: 20),
                     
-                    // Harga
+                    // Harga dengan Custom Gesture Widget
                     const Text(
-                      'Harga',
+                      'Rentang Harga',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
+                    
+                    // Menampilkan nilai harga
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Rp ${_priceRange.start.toInt()}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
                         ),
                         Text(
                           'Rp ${_priceRange.end.toInt()}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
                         ),
                       ],
                     ),
-                    RangeSlider(
-                      values: _priceRange,
+                    
+                    const SizedBox(height: 8),
+                    
+                    // Custom Range Slider dengan Gesture
+                    CustomRangeSlider(
                       min: 0,
                       max: _maxPrice,
-                      divisions: 100,
+                      values: _priceRange,
                       activeColor: primaryColor,
                       inactiveColor: primaryColor.withOpacity(0.2),
                       onChanged: (values) {
@@ -237,6 +280,25 @@ class _KatalogProdukState extends State<KatalogProduk> {
                           _priceRange = values;
                         });
                       },
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Tombol preset harga
+                    const Text(
+                      'Preset Harga',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildPricePreset('Di bawah 100rb', 0, 100000),
+                        _buildPricePreset('100rb - 300rb', 100000, 300000),
+                        _buildPricePreset('300rb - 500rb', 300000, 500000),
+                        _buildPricePreset('Di atas 500rb', 500000, _maxPrice),
+                      ],
                     ),
                   ],
                 ),
@@ -333,11 +395,20 @@ class _KatalogProdukState extends State<KatalogProduk> {
     if (_currentNavIndex == index) return;
     setState(() => _currentNavIndex = index);
     switch (index) {
-      case 0: Navigator.pushReplacementNamed(context, '/customer-home'); break;
-      case 1: break;
-      case 2: Navigator.pushReplacementNamed(context, '/custom-order'); break;
-      case 3: Navigator.pushReplacementNamed(context, '/riwayat'); break;
-      case 4: Navigator.pushReplacementNamed(context, '/profil-pembeli'); break;
+      case 0: 
+        Navigator.pushReplacementNamed(context, '/customer-home'); 
+        break;
+      case 1: 
+        break;
+      case 2: 
+        Navigator.pushReplacementNamed(context, '/custom-order'); 
+        break;
+      case 3: 
+        Navigator.pushReplacementNamed(context, '/riwayat'); 
+        break;
+      case 4: 
+        Navigator.pushReplacementNamed(context, '/profil-pembeli'); 
+        break;
     }
   }
 
@@ -353,7 +424,11 @@ class _KatalogProdukState extends State<KatalogProduk> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05), 
+            blurRadius: 8, 
+            offset: const Offset(0, 2)
+          ),
         ],
       ),
       child: Column(
@@ -374,7 +449,11 @@ class _KatalogProdukState extends State<KatalogProduk> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: Text(
               product['nama'] ?? 'Tanpa Nama',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 14, 
+                fontWeight: FontWeight.bold, 
+                color: Colors.black87
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -383,14 +462,22 @@ class _KatalogProdukState extends State<KatalogProduk> {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
               'Rp ${(product['harga'] as num).toStringAsFixed(0)}',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryColor),
+              style: TextStyle(
+                fontSize: 14, 
+                fontWeight: FontWeight.w600, 
+                color: primaryColor
+              ),
             ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
             child: Text(
               product['deskripsi'] ?? 'Tidak ada deskripsi',
-              style: const TextStyle(fontSize: 11, color: Colors.grey, height: 1.3),
+              style: const TextStyle(
+                fontSize: 11, 
+                color: Colors.grey, 
+                height: 1.3
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -412,10 +499,15 @@ class _KatalogProdukState extends State<KatalogProduk> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)
+                  ),
                   padding: EdgeInsets.zero,
                 ),
-                child: const Text('Detail', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                child: const Text(
+                  'Detail', 
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)
+                ),
               ),
             ),
           ),
@@ -434,7 +526,11 @@ class _KatalogProdukState extends State<KatalogProduk> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05), 
+              blurRadius: 8, 
+              offset: const Offset(0, 2)
+            ),
           ],
           border: Border.all(color: const Color(0xFFFFE4EB), width: 1),
         ),
@@ -455,7 +551,11 @@ class _KatalogProdukState extends State<KatalogProduk> {
                       width: isDesktop ? 120 : 80,
                       height: isDesktop ? 100 : 80,
                       color: primaryColor.withOpacity(0.1),
-                      child: Icon(Icons.image_outlined, size: 30, color: primaryColor),
+                      child: Icon(
+                        Icons.image_outlined, 
+                        size: 30, 
+                        color: primaryColor
+                      ),
                     );
                   },
                 ),
@@ -466,9 +566,19 @@ class _KatalogProdukState extends State<KatalogProduk> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('✨ Custom Bouquet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+                      const Text(
+                        '✨ Custom Bouquet',
+                        style: TextStyle(
+                          fontSize: 14, 
+                          fontWeight: FontWeight.bold, 
+                          color: Colors.black87
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Buat buket sesuai keinginanmu', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                      Text(
+                        'Buat buket sesuai keinginanmu',
+                        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                      ),
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
@@ -479,7 +589,9 @@ class _KatalogProdukState extends State<KatalogProduk> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           minimumSize: const Size(0, 28),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20)
+                          ),
                         ),
                         child: const Text('Custom', style: TextStyle(fontSize: 11)),
                       ),
@@ -638,7 +750,9 @@ class _KatalogProdukState extends State<KatalogProduk> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: primaryColor,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30)
+                            ),
                           ),
                           child: const Text('Reset'),
                         ),

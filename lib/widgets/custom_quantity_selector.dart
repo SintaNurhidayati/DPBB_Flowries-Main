@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-
-/// Custom Widget dengan Custom Drawing dan Gesture
 class CustomQuantitySelector extends StatefulWidget {
   final int initialQuantity;
   final int minQuantity;

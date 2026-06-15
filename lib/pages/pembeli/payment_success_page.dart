@@ -9,7 +9,7 @@ class PaymentSuccessPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Pembayaran Berhasil'),
         centerTitle: true,
-        automaticallyImplyLeading: false, // Prevent going back
+        automaticallyImplyLeading: false, 
       ),
       body: Center(
         child: Padding(
