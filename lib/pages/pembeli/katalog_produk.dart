@@ -69,6 +69,9 @@ class _KatalogProdukState extends State<KatalogProduk> {
     }
 
     var filtered = products.where((product) {
+      // Sembunyikan produk yang dinonaktifkan oleh admin
+      if ((product['isActive'] ?? 1) == 0) return false;
+
       if (_searchQuery.isNotEmpty) {
         final nameMatches = product['nama'].toLowerCase().contains(_searchQuery.toLowerCase());
         final descMatches = (product['deskripsi'] ?? '').toLowerCase().contains(_searchQuery.toLowerCase());

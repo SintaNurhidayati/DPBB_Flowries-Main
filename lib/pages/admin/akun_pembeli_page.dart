@@ -119,9 +119,9 @@ class _AkunPembeliPageState extends State<AkunPembeliPage> {
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 1.6, 
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 350,
+                    mainAxisExtent: 240, 
                     crossAxisSpacing: 20,
                     mainAxisSpacing: 20,
                   ),

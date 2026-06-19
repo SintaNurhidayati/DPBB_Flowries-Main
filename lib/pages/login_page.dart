@@ -30,30 +30,39 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
 
-    final authUser = await _userService.authenticateUser(email, password);
-    
-    if (authUser != null) {
-      await _sessionPrefs.saveUserSession(
-        userId: authUser['id'].toString(),
-        userName: authUser['nama'] ?? 'User',
-        userEmail: authUser['email'] ?? email,
-      );
+    try {
+      final authUser = await _userService.authenticateUser(email, password);
       
-      _userService.setCurrentUser(authUser);
-      
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (authUser['tipeUser'] == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admin-dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/customer-home');
+      if (authUser != null) {
+        await _sessionPrefs.saveUserSession(
+          userId: authUser['id'].toString(),
+          userName: authUser['nama'] ?? 'User',
+          userEmail: authUser['email'] ?? email,
+        );
+        
+        _userService.setCurrentUser(authUser);
+        
+        if (mounted) {
+          setState(() => _isLoading = false);
+          if (authUser['tipeUser'] == 'admin') {
+            Navigator.pushReplacementNamed(context, '/admin-dashboard');
+          } else {
+            Navigator.pushReplacementNamed(context, '/customer-home');
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Email atau password salah!")),
+          );
         }
       }
-    } else {
+    } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Email atau password salah!")),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
         );
       }
     }
